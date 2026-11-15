@@ -2,6 +2,9 @@ package xyz.losslessmusic.app
 
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Level
 import java.util.logging.Logger
 import org.json.JSONObject
@@ -10,6 +13,9 @@ import org.json.JSONObject
 object FakeHiResGuard {
     const val FALLBACK_QUALITY = "cd"
     private const val MANIFEST = "original_path.txt"
+    // Shared by worker instances, including a stopped worker with a blocking download.
+    // The monitor makes reservation and orphan recovery atomic with each other.
+    private val activeBackups = ConcurrentHashMap.newKeySet<String>()
     private val log = Logger.getLogger("FakeHiResGuard")
     data class Result(val path: String, val replaced: Boolean)
 
@@ -28,6 +34,7 @@ object FakeHiResGuard {
         var directory: File? = null
         var replacement: File? = null
         var committed = false
+        var reservation: String? = null
         try {
             if (isCancelled()) return kept
             val verdict = JSONObject(check(path, "{}"))
@@ -40,10 +47,14 @@ object FakeHiResGuard {
             val original = File(path).absoluteFile
             val dir = File(backupRoot, itemId).canonicalFile
             require(dir.parentFile == backupRoot.canonicalFile) { "Invalid backup item id" }
-            // Never overwrite an unrecovered backup from an earlier attempt.
-            require(!dir.exists()) { "Unrecovered backup: $dir" }
-            if (!dir.mkdirs()) throw IOException("Cannot create backup: $dir")
-            directory = dir
+            synchronized(activeBackups) {
+                require(activeBackups.add(dir.path)) { "Backup already active: $dir" }
+                reservation = dir.path
+                // Never overwrite an unrecovered backup from an earlier attempt.
+                require(!dir.exists()) { "Unrecovered backup: $dir" }
+                if (!dir.mkdirs()) throw IOException("Cannot create backup: $dir")
+                directory = dir
+            }
             // Write the recovery destination BEFORE the rename: a kill between
             // these operations must not leave an audio backup without its path.
             File(dir, MANIFEST).writeText(original.path)
@@ -52,6 +63,14 @@ object FakeHiResGuard {
             backup = saved
             val request = JSONObject(requestJson).put("quality", FALLBACK_QUALITY)
                 .put("bypass_duplicate_check", true)
+            // The callback can return an arbitrary output path. Snapshot existing
+            // paths before calling it; never infer ownership from success alone.
+            val canonicalRoot = backupRoot.canonicalFile
+            val downloadRoot = requireNotNull(canonicalRoot.parentFile)
+            val existingPaths = downloadRoot.walkTopDown()
+                .onEnter { it.canonicalFile != canonicalRoot && !Files.isSymbolicLink(it.toPath()) }
+                .onFail { _, error -> throw error }
+                .map { it.canonicalPath }.toHashSet()
             val result = redownload(request.toString())
             val newPath = result.optString("file_path", "").trim()
             // already_exists belongs to the user and must never be cleaned up.
@@ -59,15 +78,21 @@ object FakeHiResGuard {
             if (newPath.isNotEmpty() && !newPath.startsWith("content://")) {
                 val candidate = File(newPath).canonicalFile
                 if (candidate.toPath().startsWith(backupRoot.canonicalFile.toPath())) return kept
-                replacement = candidate
+                val isOriginal = candidate == original.canonicalFile
+                val isNewOutput = result.optBoolean("success", false) &&
+                    candidate.toPath().startsWith(downloadRoot.toPath()) &&
+                    candidate.path !in existingPaths
+                if (isOriginal || isNewOutput) replacement = candidate
+                // Existing distinct files may be verified, but are never owned
+                // by this transaction and must survive a failed verification.
+                if (!result.optBoolean("success", false) || !candidate.isFile || isCancelled()) return kept
+                val verified = JSONObject(check(saved.path,
+                    JSONObject().put("verify_replacement_path", newPath).toString()))
+                if (verified.has("error") || verified.opt("replacement_equivalent") != true ||
+                    isCancelled()) return kept
+            } else {
+                return kept
             }
-            val newFile = replacement
-            if (!result.optBoolean("success", false) || newFile == null ||
-                !newFile.isFile || isCancelled()) return kept
-            val verified = JSONObject(check(saved.path,
-                JSONObject().put("verify_replacement_path", newPath).toString()))
-            if (verified.has("error") || verified.opt("replacement_equivalent") != true ||
-                isCancelled()) return kept
             // A cleanup error must not restore an original after it was deleted.
             if (!saved.delete()) throw IOException("Cannot retire verified backup: $saved")
             committed = true
@@ -76,20 +101,24 @@ object FakeHiResGuard {
             log.log(Level.WARNING, "Keeping original after Hi-Res check/replacement failed: $path", e)
             return kept
         } finally {
-            val saved = backup
-            if (!committed && saved != null) {
-                try {
-                    replacement?.let {
-                        if (it.isFile && !it.delete()) log.warning("Cannot delete unverified replacement: $it")
+            try {
+                val saved = backup
+                if (!committed && saved != null) {
+                    try {
+                        replacement?.let {
+                            if (it.isFile && !it.delete()) log.warning("Cannot delete unverified replacement: $it")
+                        }
+                    } catch (e: Exception) {
+                        log.log(Level.WARNING, "Cannot remove unverified replacement", e)
                     }
-                } catch (e: Exception) {
-                    log.log(Level.WARNING, "Cannot remove unverified replacement", e)
+                    // renameTo replaces a same-path unverified file without first
+                    // deleting it. Failure retains both the backup and manifest.
+                    if (restore(saved, File(path))) cleanup(directory)
+                } else {
+                    cleanup(directory)
                 }
-                // renameTo replaces a same-path unverified file without first
-                // deleting it. Failure retains both the backup and manifest.
-                if (restore(saved, File(path))) cleanup(directory)
-            } else {
-                cleanup(directory)
+            } finally {
+                reservation?.let { activeBackups.remove(it) }
             }
         }
     }
@@ -116,15 +145,29 @@ object FakeHiResGuard {
             log.log(Level.SEVERE, "Cannot list backups: $backupRoot", e)
             return
         }
+        val canonicalRoot = backupRoot.canonicalFile
+        val downloadRoot = requireNotNull(canonicalRoot.parentFile).toPath()
         for (dir in directories) {
             try {
-                val manifest = File(dir, MANIFEST)
-                if (!manifest.isFile) continue
-                val path = manifest.readText()
-                if (path.isBlank() || !File(path).isAbsolute) continue
-                val saved = File(dir, File(path).name)
-                // Manifest-only means killed before rename or after verification.
-                if (!saved.exists() || restore(saved, File(path))) dir.deleteRecursively()
+                synchronized(activeBackups) {
+                    if (dir.canonicalPath in activeBackups) return@synchronized
+                    // Do not follow a planted item-directory or manifest symlink.
+                    if (Files.isSymbolicLink(dir.toPath())) return@synchronized
+                    val manifest = File(dir, MANIFEST)
+                    if (!Files.isRegularFile(manifest.toPath(), NOFOLLOW_LINKS)) return@synchronized
+                    val path = manifest.readText()
+                    if (path.isBlank() || !File(path).isAbsolute) return@synchronized
+                    val original = File(path).canonicalFile
+                    if (!original.toPath().startsWith(downloadRoot) ||
+                        original.toPath().startsWith(canonicalRoot.toPath()) ||
+                        original.extension.lowercase() !in setOf("flac", "wav")) return@synchronized
+                    val saved = File(dir, File(path).name)
+                    // Invalid or missing backups are left untouched for inspection.
+                    if (saved.extension.lowercase() !in setOf("flac", "wav") ||
+                        Files.isSymbolicLink(saved.toPath()) ||
+                        !Files.isRegularFile(saved.toPath(), NOFOLLOW_LINKS)) return@synchronized
+                    if (restore(saved, original)) dir.deleteRecursively()
+                }
             } catch (e: Exception) {
                 log.log(Level.SEVERE, "Cannot recover backup: $dir", e)
             }
