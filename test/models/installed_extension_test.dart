@@ -2,6 +2,63 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lossless_music_download/models/installed_extension.dart';
 
 void main() {
+  test('parses settings with secret required grantsNetwork', () {
+    final ext = InstalledExtension.fromJson({
+      'settings': [
+        {
+          'key': 'customEndpointApiKey',
+          'label': 'API key',
+          'type': 'string',
+          'default': '',
+          'description': 'Private key',
+          'secret': true,
+          'required': true,
+          'grantsNetwork': true,
+        },
+        {
+          'key': 'countryCode',
+          'label': 'Country',
+          'type': 'select',
+          'options': ['US', 'VN'],
+          'default': 'US',
+        },
+        {
+          'key': 'test_button',
+          'label': 'Test',
+          'type': 'button',
+          'action': 'testConnection',
+        },
+      ],
+    });
+    expect(ext.settings, hasLength(3));
+    final setting = ext.settings.first;
+    expect(setting.key, 'customEndpointApiKey');
+    expect(setting.label, 'API key');
+    expect(setting.type, 'string');
+    expect(setting.defaultValue, '');
+    expect(setting.description, 'Private key');
+    expect(setting.secret, isTrue);
+    expect(setting.required, isTrue);
+    expect(setting.grantsNetwork, isTrue);
+    expect(ext.settings[1].options, ['US', 'VN']);
+    expect(ext.settings[2].action, 'testConnection');
+  });
+
+  test('type defaults to string', () {
+    final ext = InstalledExtension.fromJson({
+      'settings': [
+        {'key': 'appId', 'label': 'App ID'},
+      ],
+    });
+    expect(ext.settings.single.type, 'string');
+    expect(ext.settings.single.options, isEmpty);
+    expect(ext.settings.single.secret, isFalse);
+    expect(ext.settings.single.required, isFalse);
+    expect(ext.settings.single.grantsNetwork, isFalse);
+    final empty = InstalledExtension.fromJson({});
+    expect(empty.settings, isEmpty);
+  });
+
   test('hasHomeFeed true when capabilities.homeFeed == true', () {
     final e = InstalledExtension.fromJson({
       'id': 'ytmusic', 'name': 'yt', 'version': '1', 'enabled': true,

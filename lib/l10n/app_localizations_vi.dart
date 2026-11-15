@@ -1224,4 +1224,28 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get downloadAutoConvertBitrate => 'Tốc độ bit';
+
+  @override
+  String get extSettingsTitle => 'Cài đặt tiện ích';
+
+  @override
+  String get extSettingsLoadFailed => 'Không thể tải cài đặt tiện ích';
+
+  @override
+  String get extSettingsSaveFailed => 'Không thể lưu cài đặt tiện ích';
+
+  @override
+  String get extSettingNotSet => 'Chưa đặt';
+
+  @override
+  String get extSettingRequiredEmpty => 'Giá trị bắt buộc đang trống';
+
+  @override
+  String get extSettingInvalidNumber => 'Nhập số hợp lệ';
+
+  @override
+  String get extActionFailed => 'Thao tác tiện ích thất bại';
+
+  @override
+  String get extAuthOpenFailed => 'Không thể mở liên kết đăng nhập';
 }

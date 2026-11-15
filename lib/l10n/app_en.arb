@@ -595,5 +595,13 @@
   "downloadAutoConvertMaxBitDepth": "Maximum bit depth",
   "downloadAutoConvertMaxSampleRate": "Maximum sample rate",
   "downloadAutoConvertKeepOriginal": "Keep original",
-  "downloadAutoConvertBitrate": "Bitrate"
+  "downloadAutoConvertBitrate": "Bitrate",
+  "extSettingsTitle": "Extension settings",
+  "extSettingsLoadFailed": "Could not load extension settings",
+  "extSettingsSaveFailed": "Could not save extension settings",
+  "extSettingNotSet": "Not set",
+  "extSettingRequiredEmpty": "Required value is empty",
+  "extSettingInvalidNumber": "Enter a valid number",
+  "extActionFailed": "Extension action failed",
+  "extAuthOpenFailed": "Could not open sign-in URL"
 }

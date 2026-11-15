@@ -595,5 +595,13 @@
   "downloadAutoConvertMaxBitDepth": "Độ sâu bit tối đa",
   "downloadAutoConvertMaxSampleRate": "Tần số lấy mẫu tối đa",
   "downloadAutoConvertKeepOriginal": "Giữ nguyên",
-  "downloadAutoConvertBitrate": "Tốc độ bit"
+  "downloadAutoConvertBitrate": "Tốc độ bit",
+  "extSettingsTitle": "Cài đặt tiện ích",
+  "extSettingsLoadFailed": "Không thể tải cài đặt tiện ích",
+  "extSettingsSaveFailed": "Không thể lưu cài đặt tiện ích",
+  "extSettingNotSet": "Chưa đặt",
+  "extSettingRequiredEmpty": "Giá trị bắt buộc đang trống",
+  "extSettingInvalidNumber": "Nhập số hợp lệ",
+  "extActionFailed": "Thao tác tiện ích thất bại",
+  "extAuthOpenFailed": "Không thể mở liên kết đăng nhập"
 }

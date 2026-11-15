@@ -21,13 +21,56 @@ class ExtensionQualityOption {
   }
 }
 
+/// A setting declared by an extension manifest. Defaults are display-only.
+class ExtensionSetting {
+  final String key, label, type;
+  final Object? defaultValue;
+  final String? description;
+  final List<String> options;
+  final String? action;
+  final bool secret, required, grantsNetwork;
+
+  const ExtensionSetting({
+    required this.key,
+    required this.label,
+    this.type = 'string',
+    this.defaultValue,
+    this.description,
+    this.options = const [],
+    this.action,
+    this.secret = false,
+    this.required = false,
+    this.grantsNetwork = false,
+  });
+
+  factory ExtensionSetting.fromJson(Map<String, dynamic> json) =>
+      ExtensionSetting(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? '').toString(),
+        type: (json['type'] ?? 'string').toString(),
+        defaultValue: json['default'],
+        description: json['description']?.toString(),
+        options:
+            (json['options'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
+        action: json['action']?.toString(),
+        secret: json['secret'] == true,
+        required: json['required'] == true,
+        grantsNetwork: json['grantsNetwork'] == true,
+      );
+}
+
 class InstalledExtension {
   final String id, name, version, displayName, description, status;
   final String? iconPath;
-  final bool enabled, hasMetadataProvider, hasDownloadProvider, hasLyricsProvider;
+  final bool enabled,
+      hasMetadataProvider,
+      hasDownloadProvider,
+      hasLyricsProvider;
   final List<String> types, permissions;
   final Map<String, dynamic> capabilities;
   final List<ExtensionQualityOption> qualityOptions;
+  final List<ExtensionSetting> settings;
 
   const InstalledExtension({
     required this.id,
@@ -45,6 +88,7 @@ class InstalledExtension {
     required this.hasLyricsProvider,
     this.capabilities = const {},
     this.qualityOptions = const [],
+    this.settings = const [],
   });
 
   bool get hasHomeFeed => capabilities['homeFeed'] == true;
@@ -63,25 +107,39 @@ class InstalledExtension {
       capabilities['requiresContainerConversion'] == true ||
       capabilities['requiresNativeContainerConversion'] == true;
 
-  factory InstalledExtension.fromJson(Map<String, dynamic> j) => InstalledExtension(
-        id: (j['id'] ?? '').toString(),
-        name: (j['name'] ?? '').toString(),
-        version: (j['version'] ?? '').toString(),
-        enabled: j['enabled'] == true,
-        types: (j['types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-        displayName: (j['display_name'] ?? j['name'] ?? '').toString(),
-        description: (j['description'] ?? '').toString(),
-        status: (j['status'] ?? '').toString(),
-        iconPath: j['icon_path']?.toString(),
-        permissions: (j['permissions'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-        hasMetadataProvider: j['has_metadata_provider'] == true,
-        hasDownloadProvider: j['has_download_provider'] == true,
-        hasLyricsProvider: j['has_lyrics_provider'] == true,
-        capabilities: (j['capabilities'] as Map?)?.cast<String, dynamic>() ?? const {},
-        qualityOptions: (j['quality_options'] as List?)
-                ?.whereType<Map>()
-                .map((q) => ExtensionQualityOption.fromJson(q.cast<String, dynamic>()))
-                .toList() ??
-            const [],
-      );
+  factory InstalledExtension.fromJson(
+    Map<String, dynamic> j,
+  ) => InstalledExtension(
+    id: (j['id'] ?? '').toString(),
+    name: (j['name'] ?? '').toString(),
+    version: (j['version'] ?? '').toString(),
+    enabled: j['enabled'] == true,
+    types: (j['types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+    displayName: (j['display_name'] ?? j['name'] ?? '').toString(),
+    description: (j['description'] ?? '').toString(),
+    status: (j['status'] ?? '').toString(),
+    iconPath: j['icon_path']?.toString(),
+    permissions:
+        (j['permissions'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+    hasMetadataProvider: j['has_metadata_provider'] == true,
+    hasDownloadProvider: j['has_download_provider'] == true,
+    hasLyricsProvider: j['has_lyrics_provider'] == true,
+    capabilities:
+        (j['capabilities'] as Map?)?.cast<String, dynamic>() ?? const {},
+    settings:
+        (j['settings'] as List?)
+            ?.whereType<Map>()
+            .map((s) => ExtensionSetting.fromJson(s.cast<String, dynamic>()))
+            .toList() ??
+        const [],
+    qualityOptions:
+        (j['quality_options'] as List?)
+            ?.whereType<Map>()
+            .map(
+              (q) => ExtensionQualityOption.fromJson(q.cast<String, dynamic>()),
+            )
+            .toList() ??
+        const [],
+  );
 }

@@ -1230,4 +1230,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloadAutoConvertBitrate => 'Bitrate';
+
+  @override
+  String get extSettingsTitle => 'Extension settings';
+
+  @override
+  String get extSettingsLoadFailed => 'Could not load extension settings';
+
+  @override
+  String get extSettingsSaveFailed => 'Could not save extension settings';
+
+  @override
+  String get extSettingNotSet => 'Not set';
+
+  @override
+  String get extSettingRequiredEmpty => 'Required value is empty';
+
+  @override
+  String get extSettingInvalidNumber => 'Enter a valid number';
+
+  @override
+  String get extActionFailed => 'Extension action failed';
+
+  @override
+  String get extAuthOpenFailed => 'Could not open sign-in URL';
 }

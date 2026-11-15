@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import '../models/installed_extension.dart';
 import '../providers/extensions_provider.dart';
+import '../widgets/extension_settings_section.dart';
 
 class ExtensionDetailScreen extends ConsumerWidget {
   final String id;
@@ -50,6 +51,14 @@ class ExtensionDetailScreen extends ConsumerWidget {
           // Header
           _buildHeader(context, ext),
           const SizedBox(height: 24),
+          if (ext.settings.isNotEmpty) ...[
+            ExtensionSettingsSection(
+              key: ValueKey(ext.id),
+              ext: ext,
+              bridge: ref.watch(backendBridgeProvider),
+            ),
+            const SizedBox(height: 24),
+          ],
           // Permissions section
           _buildPermissionsSection(context, t, ext),
           const SizedBox(height: 32),

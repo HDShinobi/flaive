@@ -2335,6 +2335,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bitrate'**
   String get downloadAutoConvertBitrate;
+
+  /// No description provided for @extSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension settings'**
+  String get extSettingsTitle;
+
+  /// No description provided for @extSettingsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load extension settings'**
+  String get extSettingsLoadFailed;
+
+  /// No description provided for @extSettingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save extension settings'**
+  String get extSettingsSaveFailed;
+
+  /// No description provided for @extSettingNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get extSettingNotSet;
+
+  /// No description provided for @extSettingRequiredEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Required value is empty'**
+  String get extSettingRequiredEmpty;
+
+  /// No description provided for @extSettingInvalidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number'**
+  String get extSettingInvalidNumber;
+
+  /// No description provided for @extActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension action failed'**
+  String get extActionFailed;
+
+  /// No description provided for @extAuthOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open sign-in URL'**
+  String get extAuthOpenFailed;
 }
 
 class _AppLocalizationsDelegate
