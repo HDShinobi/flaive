@@ -400,6 +400,28 @@ void main() {
       expect(bridge.duplicateDirCalls, [bridge.downloadCalls.single.outputDir]);
     });
 
+    test('persisted folder rules reach queue requests and duplicate lookup', () async {
+      SharedPreferences.setMockInitialValues({
+        'separate_singles': true, 'album_folder_structure': 'artist_album_singles',
+        'single_filename_template': '{title}', 'use_album_artist_for_folders': false,
+        'use_primary_artist_only': true,
+        'filter_contributing_artists_in_album_artist': true,
+      });
+      final bridge = _FakeBridge();
+      final c = _makeContainer(bridge);
+      addTearDown(c.dispose);
+      await c.read(downloadQueueProvider.notifier).enqueue(const Track(
+        id: 'rules', name: 'Song', artists: 'Track, Guest',
+        albumArtist: 'Album; Guest', albumName: 'Record', albumType: 'single',
+        isrc: 'ISRC'));
+      await _pump();
+      final json = bridge.downloadCalls.single.toJson();
+      expect(json['output_dir'], '/fake/downloads/Track/Singles');
+      expect(json['filename_format'], '{title}');
+      expect(json['album_artist'], 'Album');
+      expect(json['artist_name'], 'Track, Guest');
+      expect(bridge.duplicateDirCalls, [json['output_dir']]);
+    });
     test('custom templates and tags share the duplicate pre-check directory', () async {
       final bridge = _FakeBridge();
       final c = _makeContainer(bridge);

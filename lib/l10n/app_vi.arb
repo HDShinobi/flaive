@@ -613,5 +613,19 @@
       }
     }
   },
-  "audioAnalysisSpectrogramSaveFailed": "Không thể lưu ảnh phổ âm thanh"
+  "audioAnalysisSpectrogramSaveFailed": "Không thể lưu ảnh phổ âm thanh",
+  "useAlbumArtistForFoldersTitle": "Dùng nghệ sĩ album cho thư mục",
+  "usePrimaryArtistOnlyTitle": "Chỉ dùng nghệ sĩ chính",
+  "filterContributingArtistsInAlbumArtistTitle": "Lọc nghệ sĩ góp mặt trong nghệ sĩ album",
+  "filterContributingArtistsInAlbumArtistHelp": "Chỉ giữ nghệ sĩ album chính trong thư mục và metadata.",
+  "separateSinglesTitle": "Tách đĩa đơn",
+  "albumFolderStructureTitle": "Cấu trúc thư mục album",
+  "albumFolderArtistAlbum": "Albums / Nghệ sĩ / Album; Singles",
+  "albumFolderArtistYearAlbum": "Albums / Nghệ sĩ / [Năm] Album; Singles",
+  "albumFolderAlbumOnly": "Albums / Album; Singles",
+  "albumFolderYearAlbum": "Albums / [Năm] Album; Singles",
+  "albumFolderArtistAlbumSingles": "Nghệ sĩ / Album; Nghệ sĩ / Singles",
+  "albumFolderArtistAlbumFlat": "Nghệ sĩ / Album; đĩa đơn trong Nghệ sĩ",
+  "singleFilenameTemplateTitle": "Mẫu tên tệp đĩa đơn",
+  "folderRulesSinglePreview": "Xem trước đĩa đơn"
 }

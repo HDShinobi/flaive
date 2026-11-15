@@ -75,20 +75,22 @@ abstract final class DownloadTemplates {
     return null;
   }
 
-  static Track sample({bool multiDisc = false}) => Track(
-    id: 'qobuz:123',
-    name: 'Sample Song',
-    artists: 'Sample Artist',
-    albumName: 'Sample Album',
-    albumArtist: 'Sample Artist',
-    trackNumber: 3,
-    discNumber: multiDisc ? 2 : 1,
-    totalDiscs: multiDisc ? 2 : 1,
-    releaseDate: '2026-11-07',
-    isrc: 'USABC2600001',
-    source: 'qobuz',
-    playlistPosition: 5,
-  );
+  static Track sample({bool multiDisc = false, bool singleRelease = false}) =>
+      Track(
+        id: 'qobuz:123',
+        name: 'Sample Song',
+        artists: 'Sample Artist',
+        albumName: 'Sample Album',
+        albumArtist: 'Sample Artist',
+        albumType: singleRelease ? 'single' : 'album',
+        trackNumber: 3,
+        discNumber: multiDisc ? 2 : 1,
+        totalDiscs: multiDisc ? 2 : 1,
+        releaseDate: '2026-11-07',
+        isrc: 'USABC2600001',
+        source: 'qobuz',
+        playlistPosition: 5,
+      );
 
   static String preview(String template, Track track, {String? quality}) =>
       sanitizeFolderSegment(_expand(template, track, quality: quality));
@@ -177,7 +179,13 @@ abstract final class DownloadTemplates {
   String filenameTemplate = '',
   String albumFolderTemplate = '',
   String? quality,
+  FolderRules rules = const FolderRules(),
 }) {
+  if (track.isSingle &&
+      rules.singleFilenameTemplate.isNotEmpty &&
+      DownloadTemplates.validate(rules.singleFilenameTemplate) == null) {
+    filenameTemplate = rules.singleFilenameTemplate;
+  }
   final custom =
       filenameTemplate.isNotEmpty &&
       DownloadTemplates.validate(filenameTemplate) == null;
@@ -207,7 +215,8 @@ abstract final class DownloadTemplates {
     'year': date.length >= 4 ? date.substring(0, 4) : '',
   });
   final relative =
-      albumFolderTemplate.isNotEmpty &&
+      !(rules.separateSingles && track.isSingle) &&
+          albumFolderTemplate.isNotEmpty &&
           DownloadTemplates.validate(albumFolderTemplate, folder: true) == null
       ? DownloadTemplates.folder(albumFolderTemplate, track, quality: quality)
       : buildRelativeFolder(
@@ -216,7 +225,10 @@ abstract final class DownloadTemplates {
             artist: track.artists,
             albumArtist: track.albumArtist,
             album: track.albumName,
+            isSingle: track.isSingle,
+            releaseDate: track.releaseDate,
           ),
+          rules: rules,
         );
   return (
     dir: relative.isEmpty

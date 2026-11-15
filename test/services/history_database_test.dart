@@ -395,6 +395,37 @@ void main() {
       );
     },
   );
+  test('release classification survives history round trip and reopen', () async {
+    await add('single', const Track(id: 's', name: 'Song', artists: 'Artist',
+      albumType: 'ep', totalTracks: 2));
+    await history.close();
+    history = HistoryDatabase(path: '${dir.path}/history.db', factory: databaseFactoryFfi);
+    final track = (await history.list()).single.track;
+    expect(track.albumType, 'ep');
+    expect(track.totalTracks, 2);
+    expect(track.isSingle, true);
+  });
+  test('v4 migration adds release classification without changing old rows', () async {
+    await add('legacy', song);
+    final sql = await history.database;
+    final columns = await sql.rawQuery('PRAGMA table_info(history)');
+    for (final name in ['album_type', 'total_tracks']) {
+      if (columns.any((row) => row['name'] == name)) {
+        await sql.execute('ALTER TABLE history DROP COLUMN $name');
+      }
+    }
+    await sql.setVersion(4);
+    await history.close();
+    history = HistoryDatabase(path: '${dir.path}/history.db', factory: databaseFactoryFfi);
+    final migrated = await history.database;
+    final names = (await migrated.rawQuery('PRAGMA table_info(history)'))
+      .map((row) => row['name']);
+    expect(names, containsAll(['album_type', 'total_tracks']));
+    final old = (await history.list()).single;
+    expect(old.track.id, song.id);
+    expect(old.track.albumType, isNull);
+    expect(old.track.totalTracks, isNull);
+  });
   test(
     'v2 migration removes guessed identities and marks existing scan rows',
     () async {
@@ -411,7 +442,7 @@ void main() {
         whereArgs: [legacy.id],
       );
       // Build an actual v2 fixture rather than relabeling the current schema.
-      for (final column in ['total_discs', 'release_date', 'playlist_position']) {
+      for (final column in ['total_discs', 'release_date', 'playlist_position', 'album_type', 'total_tracks']) {
         await sql.execute('ALTER TABLE history DROP COLUMN $column');
       }
       await sql.setVersion(2);

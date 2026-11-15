@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/metadata_separators.dart';
 import '../providers/download_options_provider.dart';
 import '../services/download_templates.dart';
+import '../services/download_paths.dart';
 import 'library_reorganize_screen.dart';
 
 class DownloadFileSettingsScreen extends ConsumerWidget {
@@ -15,6 +16,7 @@ class DownloadFileSettingsScreen extends ConsumerWidget {
     final t = AppLocalizations.of(context);
     final filename = ref.watch(filenameTemplateProvider);
     final folder = ref.watch(albumFolderTemplateProvider);
+    final rules = ref.watch(folderRulesProvider);
     final mode = ref.watch(artistTagModeProvider);
     final separators = ref.watch(metadataSeparatorsProvider);
     return Scaffold(
@@ -47,11 +49,90 @@ class DownloadFileSettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          SwitchListTile(
+            title: Text(t.useAlbumArtistForFoldersTitle),
+            value: rules.useAlbumArtistForFolders,
+            onChanged: ref.read(useAlbumArtistForFoldersProvider.notifier).set,
+          ),
+          SwitchListTile(
+            title: Text(t.usePrimaryArtistOnlyTitle),
+            value: rules.usePrimaryArtistOnly,
+            onChanged: ref.read(usePrimaryArtistOnlyProvider.notifier).set,
+          ),
+          SwitchListTile(
+            title: Text(t.filterContributingArtistsInAlbumArtistTitle),
+            subtitle: Text(t.filterContributingArtistsInAlbumArtistHelp),
+            value: rules.filterContributingArtistsInAlbumArtist,
+            onChanged: ref
+                .read(filterContributingArtistsInAlbumArtistProvider.notifier)
+                .set,
+          ),
+          SwitchListTile(
+            title: Text(t.separateSinglesTitle),
+            value: rules.separateSingles,
+            onChanged: ref.read(separateSinglesProvider.notifier).set,
+          ),
+          ListTile(
+            title: Text(t.albumFolderStructureTitle),
+            subtitle: Text(
+              _folderStructureLabel(t, rules.albumFolderStructure),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            enabled: rules.separateSingles,
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (ctx) => SimpleDialog(
+                title: Text(t.albumFolderStructureTitle),
+                children: [
+                  RadioGroup<String>(
+                    groupValue: rules.albumFolderStructure,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      ref
+                          .read(albumFolderStructureProvider.notifier)
+                          .set(value);
+                      Navigator.pop(ctx);
+                    },
+                    child: Column(
+                      children: [
+                        for (final value in FolderRules.albumFolderStructures)
+                          RadioListTile<String>(
+                            value: value,
+                            title: Text(_folderStructureLabel(t, value)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ListTile(
+            title: Text(t.singleFilenameTemplateTitle),
+            subtitle: Text(
+              rules.singleFilenameTemplate.isEmpty
+                  ? t.templateDefault
+                  : rules.singleFilenameTemplate,
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (_) => _TemplateEditor(
+                folder: false,
+                single: true,
+                current: rules.singleFilenameTemplate,
+                onSave: ref.read(singleFilenameTemplateProvider.notifier).set,
+              ),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.drive_file_move_outlined),
             title: Text(t.reorganizeExisting),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const LibraryReorganizeScreen())),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const LibraryReorganizeScreen(),
+              ),
+            ),
           ),
           const Divider(),
           ListTile(
@@ -119,6 +200,16 @@ class DownloadFileSettingsScreen extends ConsumerWidget {
   }
 }
 
+String _folderStructureLabel(AppLocalizations t, String value) =>
+    switch (value) {
+      'artist_year_album' => t.albumFolderArtistYearAlbum,
+      'album_only' => t.albumFolderAlbumOnly,
+      'year_album' => t.albumFolderYearAlbum,
+      'artist_album_singles' => t.albumFolderArtistAlbumSingles,
+      'artist_album_flat' => t.albumFolderArtistAlbumFlat,
+      _ => t.albumFolderArtistAlbum,
+    };
+
 String _artistModeLabel(AppLocalizations t, String mode) => switch (mode) {
   'split_vorbis' => t.artistTagSplitVorbis,
   'primary' => t.artistTagPrimary,
@@ -137,7 +228,9 @@ class _TemplateEditor extends ConsumerStatefulWidget {
     required this.folder,
     required this.current,
     required this.onSave,
+    this.single = false,
   });
+  final bool single;
   final bool folder;
   final String current;
   final Future<void> Function(String) onSave;
@@ -177,7 +270,7 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
         : presets.contains(_text.text)
         ? _text.text
         : '__custom';
-    final filename = widget.folder
+    final filename = widget.folder || widget.single
         ? ref.watch(filenameTemplateProvider)
         : _default
         ? ''
@@ -187,12 +280,28 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
               ? ''
               : _text.text
         : ref.watch(albumFolderTemplateProvider);
-    String preview(bool multiDisc) {
-      final track = DownloadTemplates.sample(multiDisc: multiDisc);
+    final savedRules = ref.watch(folderRulesProvider);
+    final rules = widget.single
+        ? FolderRules(
+            useAlbumArtistForFolders: savedRules.useAlbumArtistForFolders,
+            usePrimaryArtistOnly: savedRules.usePrimaryArtistOnly,
+            filterContributingArtistsInAlbumArtist:
+                savedRules.filterContributingArtistsInAlbumArtist,
+            separateSingles: savedRules.separateSingles,
+            albumFolderStructure: savedRules.albumFolderStructure,
+            singleFilenameTemplate: _default ? '' : _text.text,
+          )
+        : savedRules;
+    String preview(bool multiDisc, {bool singleRelease = false}) {
+      final track = DownloadTemplates.sample(
+        multiDisc: multiDisc,
+        singleRelease: singleRelease,
+      );
       final target = resolveDownloadTarget(
         '',
         track,
         mode: ref.watch(folderOrganizationProvider),
+        rules: rules,
         filenameTemplate: filename,
         albumFolderTemplate: folder,
         quality: 'LOSSLESS',
@@ -204,7 +313,11 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
 
     return AlertDialog(
       title: Text(
-        widget.folder ? t.albumFolderTemplateTitle : t.filenameTemplateTitle,
+        widget.folder
+            ? t.albumFolderTemplateTitle
+            : widget.single
+            ? t.singleFilenameTemplateTitle
+            : t.filenameTemplateTitle,
       ),
       content: SizedBox(
         width: 480,
@@ -262,11 +375,16 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
               Text(t.templateDiscSafety),
               const SizedBox(height: 16),
               if (error == null) ...[
-                Text(t.templatePreviewSingle),
-                Text(preview(false)),
-                const SizedBox(height: 8),
-                Text(t.templatePreviewMulti),
-                Text(preview(true)),
+                if (!widget.single) ...[
+                  Text(t.templatePreviewSingle),
+                  Text(preview(false)),
+                  const SizedBox(height: 8),
+                  Text(t.templatePreviewMulti),
+                  Text(preview(true)),
+                  const SizedBox(height: 8),
+                ],
+                Text(t.folderRulesSinglePreview),
+                Text(preview(false, singleRelease: true)),
               ],
             ],
           ),

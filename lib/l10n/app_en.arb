@@ -613,5 +613,19 @@
       }
     }
   },
-  "audioAnalysisSpectrogramSaveFailed": "Could not save spectrogram"
+  "audioAnalysisSpectrogramSaveFailed": "Could not save spectrogram",
+  "useAlbumArtistForFoldersTitle": "Use album artist for folders",
+  "usePrimaryArtistOnlyTitle": "Use primary artist only",
+  "filterContributingArtistsInAlbumArtistTitle": "Filter contributing album artists",
+  "filterContributingArtistsInAlbumArtistHelp": "Keep only the primary album artist in folders and metadata.",
+  "separateSinglesTitle": "Separate singles",
+  "albumFolderStructureTitle": "Album folder structure",
+  "albumFolderArtistAlbum": "Albums / Artist / Album; Singles",
+  "albumFolderArtistYearAlbum": "Albums / Artist / [Year] Album; Singles",
+  "albumFolderAlbumOnly": "Albums / Album; Singles",
+  "albumFolderYearAlbum": "Albums / [Year] Album; Singles",
+  "albumFolderArtistAlbumSingles": "Artist / Album; Artist / Singles",
+  "albumFolderArtistAlbumFlat": "Artist / Album; singles in Artist",
+  "singleFilenameTemplateTitle": "Single filename template",
+  "folderRulesSinglePreview": "Single release preview"
 }

@@ -74,6 +74,7 @@ Future<bool> isActiveLibraryDownloadPath(Ref ref, String path) async {
   if (active.any(matchesFilePath)) return true;
   await Future.wait([
     ref.read(folderOrganizationProvider.notifier).ready,
+    ref.read(folderRulesReadyProvider.future),
     ref.read(filenameTemplateProvider.notifier).ready,
     ref.read(albumFolderTemplateProvider.notifier).ready,
   ]);
@@ -87,6 +88,7 @@ Future<bool> isActiveLibraryDownloadPath(Ref ref, String path) async {
       root,
       entry.track,
       mode: ref.read(folderOrganizationProvider),
+      rules: ref.read(folderRulesProvider),
       filenameTemplate: ref.read(filenameTemplateProvider),
       albumFolderTemplate: ref.read(albumFolderTemplateProvider),
       quality: entry.quality,

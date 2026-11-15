@@ -45,17 +45,66 @@ enum FolderOrganization {
       };
 }
 
+/// Shared folder and single-file preferences. Defaults retain legacy paths.
+class FolderRules {
+  const FolderRules({
+    this.useAlbumArtistForFolders = true,
+    this.usePrimaryArtistOnly = false,
+    this.filterContributingArtistsInAlbumArtist = false,
+    this.separateSingles = false,
+    this.albumFolderStructure = 'artist_album',
+    this.singleFilenameTemplate = '',
+  });
+
+  final bool useAlbumArtistForFolders;
+  final bool usePrimaryArtistOnly;
+  final bool filterContributingArtistsInAlbumArtist;
+  final bool separateSingles;
+  final String albumFolderStructure;
+  final String singleFilenameTemplate;
+
+  static const albumFolderStructures = [
+    'artist_album',
+    'artist_year_album',
+    'album_only',
+    'year_album',
+    'artist_album_singles',
+    'artist_album_flat',
+  ];
+}
+
+final _primaryArtistSeparator = RegExp(
+  r'\s*[,;]\s*|\s+(?:feat\.?|ft\.?|featuring|with|x)\s+',
+  caseSensitive: false,
+);
+
+String primaryArtist(String artists) =>
+    artists.split(_primaryArtistSeparator).first.trim();
+
+/// The metadata flag is independent of which artist supplies folder names.
+String? albumArtistForMetadata(String? artist, FolderRules rules) {
+  final value = artist?.trim();
+  if (value == null || value.isEmpty) return null;
+  return rules.filterContributingArtistsInAlbumArtist
+      ? primaryArtist(value)
+      : value;
+}
+
 /// The subset of track metadata that folder names are built from.
 class FolderMetadata {
   const FolderMetadata({
     required this.artist,
     this.albumArtist,
     this.album,
+    this.isSingle = false,
+    this.releaseDate,
   });
 
   final String artist;
   final String? albumArtist;
   final String? album;
+  final bool isSingle;
+  final String? releaseDate;
 }
 
 /// Characters no Android/Linux/Windows filesystem accepts in a path segment.
@@ -65,8 +114,9 @@ final _whitespaceRun = RegExp(r'\s+');
 /// Cleans one path segment. Unlike the engine's `sanitizeFilename` this runs per
 /// segment, so `/` between segments is preserved by the caller.
 String sanitizeFolderSegment(String name) {
-  final withoutControl =
-      name.runes.where((r) => r >= 0x20 && r != 0x7f).map(String.fromCharCode);
+  final withoutControl = name.runes
+      .where((r) => r >= 0x20 && r != 0x7f)
+      .map(String.fromCharCode);
   var out = withoutControl
       .join()
       .replaceAll(_invalidSegmentChars, ' ')
@@ -74,7 +124,9 @@ String sanitizeFolderSegment(String name) {
       .trim();
   // Trailing dots and leading/trailing spaces break Windows shares and confuse
   // Android's media scanner; a leading dot would also hide the folder.
-  out = out.replaceAll(RegExp(r'^[.\s]+'), '').replaceAll(RegExp(r'[.\s]+$'), '');
+  out = out
+      .replaceAll(RegExp(r'^[.\s]+'), '')
+      .replaceAll(RegExp(r'[.\s]+$'), '');
   return out.isEmpty ? 'Unknown' : out;
 }
 
@@ -86,19 +138,54 @@ final _featuredArtist = RegExp(
 
 /// Builds the relative folder for [track] under the download directory.
 /// Returns `''` when no folder should be created.
-String buildRelativeFolder(FolderOrganization mode, FolderMetadata track) {
-  if (mode == FolderOrganization.none) return '';
+String buildRelativeFolder(
+  FolderOrganization mode,
+  FolderMetadata track, {
+  FolderRules rules = const FolderRules(),
+}) {
+  if (!rules.separateSingles && mode == FolderOrganization.none) return '';
 
-  // Prefer the album artist: it keeps compilations and features together in one
-  // folder instead of scattering them per track credit.
-  final rawArtist = [track.albumArtist, track.artist]
-      .firstWhere((v) => v != null && v.trim().isNotEmpty, orElse: () => null);
-  final artist = rawArtist == null
+  final albumArtist = track.albumArtist;
+  final hasAlbumArtist = albumArtist != null && albumArtist.trim().isNotEmpty;
+  final rawArtist = rules.useAlbumArtistForFolders && hasAlbumArtist
+      ? albumArtist
+      : track.artist;
+  final usePrimary =
+      rules.usePrimaryArtistOnly ||
+      (rules.useAlbumArtistForFolders &&
+          hasAlbumArtist &&
+          rules.filterContributingArtistsInAlbumArtist);
+  // Keep legacy featured-credit cleanup even with the default rules.
+  final folderArtist = usePrimary
+      ? primaryArtist(rawArtist)
+      : rawArtist.replaceAll(_featuredArtist, '');
+  final artist = rawArtist.trim().isEmpty
       ? null
-      : sanitizeFolderSegment(rawArtist.replaceAll(_featuredArtist, ''));
+      : sanitizeFolderSegment(folderArtist);
   final album = (track.album?.trim().isNotEmpty ?? false)
       ? sanitizeFolderSegment(track.album!)
       : null;
+
+  if (rules.separateSingles) {
+    final a = artist ?? 'Unknown';
+    final record = album ?? 'Unknown';
+    if (track.isSingle) {
+      return switch (rules.albumFolderStructure) {
+        'artist_album_singles' => '$a/Singles',
+        'artist_album_flat' => a,
+        _ => 'Singles',
+      };
+    }
+    final year = RegExp(r'^\d{4}').stringMatch(track.releaseDate?.trim() ?? '');
+    final yearAlbum = year == null ? record : '[$year] $record';
+    return switch (rules.albumFolderStructure) {
+      'artist_album_singles' || 'artist_album_flat' => '$a/$record',
+      'album_only' => 'Albums/$record',
+      'artist_year_album' => 'Albums/$a/$yearAlbum',
+      'year_album' => 'Albums/$yearAlbum',
+      _ => 'Albums/$a/$record',
+    };
+  }
 
   final segments = switch (mode) {
     FolderOrganization.artist => [artist],
@@ -124,7 +211,8 @@ String basenameTemplateFor(
   int? totalDiscs,
 }) {
   if (mode == FolderOrganization.none) return '{artist} - {title}';
-  final multiDisc = (totalDiscs ?? 0) > 1 ||
+  final multiDisc =
+      (totalDiscs ?? 0) > 1 ||
       ((totalDiscs ?? 0) <= 0 && (discNumber ?? 0) > 1);
   return multiDisc ? '{disc}-{track}. {title}' : '{track}. {title}';
 }

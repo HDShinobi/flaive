@@ -4,6 +4,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lossless_music_download/providers/download_options_provider.dart';
 
 void main() {
+  test('folder rules restore exact keys and react to validated edits', () async {
+    SharedPreferences.setMockInitialValues({
+      'use_album_artist_for_folders': false, 'use_primary_artist_only': true,
+      'filter_contributing_artists_in_album_artist': true, 'separate_singles': true,
+      'album_folder_structure': 'artist_year_album',
+      'single_filename_template': '{title} - {artist}',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(folderRulesReadyProvider.future);
+    final rules = c.read(folderRulesProvider);
+    expect(rules.useAlbumArtistForFolders, false);
+    expect(rules.usePrimaryArtistOnly, true);
+    expect(rules.filterContributingArtistsInAlbumArtist, true);
+    expect(rules.separateSingles, true);
+    expect(rules.albumFolderStructure, 'artist_year_album');
+    expect(rules.singleFilenameTemplate, '{title} - {artist}');
+    await c.read(albumFolderStructureProvider.notifier).set('bad');
+    await c.read(singleFilenameTemplateProvider.notifier).set('../{title}');
+    expect(c.read(folderRulesProvider).albumFolderStructure, 'artist_year_album');
+    expect(c.read(folderRulesProvider).singleFilenameTemplate, '{title} - {artist}');
+    await c.read(separateSinglesProvider.notifier).set(false);
+    expect(c.read(folderRulesProvider).separateSingles, false);
+    expect((await SharedPreferences.getInstance()).getBool('separate_singles'), false);
+  });
   test('auto conversion prefs persist all options before payload construction', () async {
     SharedPreferences.setMockInitialValues({});
     final c = ProviderContainer();

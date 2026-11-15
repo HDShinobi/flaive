@@ -43,6 +43,7 @@ class _LibraryReorganizeState extends ConsumerState<LibraryReorganizeScreen> {
         ref.read(filenameTemplateProvider.notifier).ready,
         ref.read(albumFolderTemplateProvider.notifier).ready,
         ref.read(folderOrganizationProvider.notifier).ready,
+        ref.read(folderRulesReadyProvider.future),
       ]);
       if (!mounted) return;
       final root = await ref.read(downloadDirProvider.future);
@@ -60,6 +61,7 @@ class _LibraryReorganizeState extends ConsumerState<LibraryReorganizeScreen> {
       final plan = await service.plan(
         root: root,
         mode: ref.read(folderOrganizationProvider),
+        rules: ref.read(folderRulesProvider),
         filenameTemplate: ref.read(filenameTemplateProvider),
         albumFolderTemplate: ref.read(albumFolderTemplateProvider),
         selection: widget.selection,

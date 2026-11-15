@@ -1260,4 +1260,51 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get audioAnalysisSpectrogramSaveFailed =>
       'Không thể lưu ảnh phổ âm thanh';
+
+  @override
+  String get useAlbumArtistForFoldersTitle => 'Dùng nghệ sĩ album cho thư mục';
+
+  @override
+  String get usePrimaryArtistOnlyTitle => 'Chỉ dùng nghệ sĩ chính';
+
+  @override
+  String get filterContributingArtistsInAlbumArtistTitle =>
+      'Lọc nghệ sĩ góp mặt trong nghệ sĩ album';
+
+  @override
+  String get filterContributingArtistsInAlbumArtistHelp =>
+      'Chỉ giữ nghệ sĩ album chính trong thư mục và metadata.';
+
+  @override
+  String get separateSinglesTitle => 'Tách đĩa đơn';
+
+  @override
+  String get albumFolderStructureTitle => 'Cấu trúc thư mục album';
+
+  @override
+  String get albumFolderArtistAlbum => 'Albums / Nghệ sĩ / Album; Singles';
+
+  @override
+  String get albumFolderArtistYearAlbum =>
+      'Albums / Nghệ sĩ / [Năm] Album; Singles';
+
+  @override
+  String get albumFolderAlbumOnly => 'Albums / Album; Singles';
+
+  @override
+  String get albumFolderYearAlbum => 'Albums / [Năm] Album; Singles';
+
+  @override
+  String get albumFolderArtistAlbumSingles =>
+      'Nghệ sĩ / Album; Nghệ sĩ / Singles';
+
+  @override
+  String get albumFolderArtistAlbumFlat =>
+      'Nghệ sĩ / Album; đĩa đơn trong Nghệ sĩ';
+
+  @override
+  String get singleFilenameTemplateTitle => 'Mẫu tên tệp đĩa đơn';
+
+  @override
+  String get folderRulesSinglePreview => 'Xem trước đĩa đơn';
 }

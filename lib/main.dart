@@ -23,6 +23,7 @@ void main() async {
   await container.read(askBeforeDownloadProvider.notifier).load();
   await container.read(redownloadFakeHiResProvider.notifier).ready;
   await Future.wait([
+    container.read(folderRulesReadyProvider.future),
     container.read(autoConvertDownloadsProvider.notifier).ready,
     container.read(autoConvertFormatProvider.notifier).ready,
     container.read(autoConvertBitrateProvider.notifier).ready,

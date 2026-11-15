@@ -107,6 +107,8 @@ class HistoryEntry {
       'track_number': track.trackNumber,
       'disc_number': track.discNumber,
       'total_discs': track.totalDiscs,
+      'album_type': track.albumType,
+      'total_tracks': track.totalTracks,
       'release_date': track.releaseDate,
       'playlist_position': track.playlistPosition,
       'duration_ms': track.durationMs,
@@ -135,6 +137,8 @@ class HistoryEntry {
       trackNumber: row['track_number'] as int?,
       discNumber: row['disc_number'] as int?,
       totalDiscs: row['total_discs'] as int?,
+      albumType: row['album_type'] as String?,
+      totalTracks: row['total_tracks'] as int?,
       releaseDate: row['release_date'] as String?,
       playlistPosition: row['playlist_position'] as int?,
       durationMs: row['duration_ms'] as int?,
@@ -152,8 +156,9 @@ class HistoryEntry {
 /// Own schema versioning: this reduced Android database is not upstream's DB.
 /// v1 holds metadata; v2 adds lookups; v3 repairs identities; v4 retains
 /// the disc/date/playlist fields needed to reapply download templates.
+/// v5 retains release classification for single-aware reorganization.
 class HistoryDatabase {
-  static const version = 4;
+  static const version = 5;
   final String path;
   final DatabaseFactory? factory;
   Future<Database>? _opening;
@@ -247,6 +252,10 @@ class HistoryDatabase {
       await db.execute('ALTER TABLE history ADD COLUMN release_date TEXT');
       await db.execute('ALTER TABLE history ADD COLUMN playlist_position INTEGER');
     }
+    if (old < 5 && next >= 5) {
+      await db.execute('ALTER TABLE history ADD COLUMN album_type TEXT');
+      await db.execute('ALTER TABLE history ADD COLUMN total_tracks INTEGER');
+    }
     if (old < 3) {
       // v2 guessed Spotify for bare IDs; their provenance cannot be recovered.
       await db.execute(
@@ -309,7 +318,8 @@ class HistoryDatabase {
           'album_name': 'album', 'album_artist': 'album_artist', 'isrc': 'isrc',
           'track_number': 'track_number', 'disc_number': 'disc_number',
           'duration_ms': 'duration_ms', 'cover_url': 'cover_url',
-          'total_discs': 'total_discs', 'release_date': 'release_date'};
+          'total_discs': 'total_discs', 'release_date': 'release_date',
+          'album_type': 'album_type', 'total_tracks': 'total_tracks'};
         for (final field in fields.entries) {
           final value = tags[field.key];
           if (value is String && value.trim().isNotEmpty || value is num && value > 0) {

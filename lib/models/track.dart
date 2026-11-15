@@ -63,6 +63,16 @@ class Track {
     this.playlistPosition,
   });
 
+  bool get isSingle {
+    final type = albumType?.trim().toLowerCase() ?? '';
+    if (type == 'single' || type == 'ep') return true;
+    if (type.isNotEmpty) return false;
+    if (totalTracks == 1) return true;
+    final album = albumName?.trim().toLowerCase();
+    return (album == 'single' || album == 'singles') &&
+        (totalTracks == null || totalTracks! <= 2);
+  }
+
   factory Track.fromJson(Map<String, dynamic> j) {
     // duration may arrive as duration_ms (ms) or duration (seconds).
     final durMs = (j['duration_ms'] as num?)?.toInt() ??

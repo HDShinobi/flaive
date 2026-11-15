@@ -288,3 +288,62 @@ final autoConvertMaxBitDepthProvider = NotifierProvider<_IntPrefNotifier, int>(
   () => _IntPrefNotifier('auto_convert_max_bit_depth', 16, [16, 24, 0]));
 final autoConvertMaxSampleRateProvider = NotifierProvider<_IntPrefNotifier, int>(
   () => _IntPrefNotifier('auto_convert_max_sample_rate', 48000, [44100, 48000, 96000, 192000, 0]));
+
+final useAlbumArtistForFoldersProvider =
+    NotifierProvider<_BoolPrefNotifier, bool>(
+      () => _BoolPrefNotifier('use_album_artist_for_folders', true),
+    );
+final usePrimaryArtistOnlyProvider = NotifierProvider<_BoolPrefNotifier, bool>(
+  () => _BoolPrefNotifier('use_primary_artist_only', false),
+);
+final filterContributingArtistsInAlbumArtistProvider =
+    NotifierProvider<_BoolPrefNotifier, bool>(
+      () => _BoolPrefNotifier(
+        'filter_contributing_artists_in_album_artist',
+        false,
+      ),
+    );
+final separateSinglesProvider = NotifierProvider<_BoolPrefNotifier, bool>(
+  () => _BoolPrefNotifier('separate_singles', false),
+);
+final albumFolderStructureProvider =
+    NotifierProvider<_StringPrefNotifier, String>(
+      () => _StringPrefNotifier(
+        'album_folder_structure',
+        'artist_album',
+        FolderRules.albumFolderStructures.contains,
+      ),
+    );
+final singleFilenameTemplateProvider =
+    NotifierProvider<_StringPrefNotifier, String>(
+      () => _StringPrefNotifier(
+        'single_filename_template',
+        '',
+        (v) => v.isEmpty || DownloadTemplates.validate(v) == null,
+      ),
+    );
+
+final folderRulesProvider = Provider<FolderRules>(
+  (ref) => FolderRules(
+    useAlbumArtistForFolders: ref.watch(useAlbumArtistForFoldersProvider),
+    usePrimaryArtistOnly: ref.watch(usePrimaryArtistOnlyProvider),
+    filterContributingArtistsInAlbumArtist: ref.watch(
+      filterContributingArtistsInAlbumArtistProvider,
+    ),
+    separateSingles: ref.watch(separateSinglesProvider),
+    albumFolderStructure: ref.watch(albumFolderStructureProvider),
+    singleFilenameTemplate: ref.watch(singleFilenameTemplateProvider),
+  ),
+);
+
+/// Await the six preferences at every non-UI path-planning entry point.
+final folderRulesReadyProvider = FutureProvider<void>((ref) async {
+  await Future.wait([
+    ref.read(useAlbumArtistForFoldersProvider.notifier).ready,
+    ref.read(usePrimaryArtistOnlyProvider.notifier).ready,
+    ref.read(filterContributingArtistsInAlbumArtistProvider.notifier).ready,
+    ref.read(separateSinglesProvider.notifier).ready,
+    ref.read(albumFolderStructureProvider.notifier).ready,
+    ref.read(singleFilenameTemplateProvider.notifier).ready,
+  ]);
+});

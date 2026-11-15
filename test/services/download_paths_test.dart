@@ -2,6 +2,53 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lossless_music_download/services/download_paths.dart';
 
 void main() {
+  test('primaryArtist splits credits but preserves Lil Nas X', () {
+    for (final value in [
+      'A, B',
+      'A; B',
+      'A feat. B',
+      'A FT B',
+      'A featuring B',
+      'A with B',
+      'A x B',
+    ]) {
+      expect(primaryArtist(value), 'A', reason: value);
+    }
+    expect(primaryArtist('Lil Nas X'), 'Lil Nas X');
+  });
+  test('folder artist rules select and filter album or track credits', () {
+    const track = FolderMetadata(
+      artist: 'Track, Guest',
+      albumArtist: 'Album; Guest',
+      album: 'Record',
+    );
+    String folder(FolderRules rules) => buildRelativeFolder(
+      FolderOrganization.artistAlbum,
+      track,
+      rules: rules,
+    );
+    expect(
+      folder(const FolderRules(useAlbumArtistForFolders: false)),
+      'Track, Guest/Record',
+    );
+    expect(
+      folder(const FolderRules(usePrimaryArtistOnly: true)),
+      'Album/Record',
+    );
+    expect(
+      folder(const FolderRules(filterContributingArtistsInAlbumArtist: true)),
+      'Album/Record',
+    );
+    expect(
+      folder(
+        const FolderRules(
+          useAlbumArtistForFolders: false,
+          filterContributingArtistsInAlbumArtist: true,
+        ),
+      ),
+      'Track, Guest/Record',
+    );
+  });
   group('stripTrackNumberPrefix', () {
     const cases = {
       '01. Title': 'Title',

@@ -2,6 +2,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lossless_music_download/models/track.dart';
 
 void main() {
+  group('Track.isSingle', () {
+    Track track({String? type, int? count, String? album}) => Track(
+      id: 's',
+      name: 'Song',
+      artists: 'Artist',
+      albumType: type,
+      totalTracks: count,
+      albumName: album,
+    );
+    test('single and ep types take priority', () {
+      expect(track(type: ' SINGLE ', count: 12).isSingle, true);
+      expect(track(type: 'ep', count: 6).isSingle, true);
+    });
+    test('any other explicit type rejects single heuristics', () {
+      expect(track(type: 'album', count: 1, album: 'Single').isSingle, false);
+      expect(track(type: 'compilation', count: 1).isSingle, false);
+    });
+    test('one track without an explicit type is a single', () {
+      expect(track(count: 1).isSingle, true);
+      expect(track(type: ' ', count: 1).isSingle, true);
+      expect(track(count: 2).isSingle, false);
+    });
+    test('single album names accept unknown or at most two tracks', () {
+      expect(track(album: ' Singles ', count: 2).isSingle, true);
+      expect(track(album: 'Single').isSingle, true);
+      expect(track(album: 'Singles', count: 3).isSingle, false);
+      expect(track(album: 'A Single Song', count: 2).isSingle, false);
+    });
+  });
   group('Track.fromJson (rich fields)', () {
     test('parses snake_case and camelCase tagging fields', () {
       for (final input in [

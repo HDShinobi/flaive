@@ -1265,4 +1265,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get audioAnalysisSpectrogramSaveFailed => 'Could not save spectrogram';
+
+  @override
+  String get useAlbumArtistForFoldersTitle => 'Use album artist for folders';
+
+  @override
+  String get usePrimaryArtistOnlyTitle => 'Use primary artist only';
+
+  @override
+  String get filterContributingArtistsInAlbumArtistTitle =>
+      'Filter contributing album artists';
+
+  @override
+  String get filterContributingArtistsInAlbumArtistHelp =>
+      'Keep only the primary album artist in folders and metadata.';
+
+  @override
+  String get separateSinglesTitle => 'Separate singles';
+
+  @override
+  String get albumFolderStructureTitle => 'Album folder structure';
+
+  @override
+  String get albumFolderArtistAlbum => 'Albums / Artist / Album; Singles';
+
+  @override
+  String get albumFolderArtistYearAlbum =>
+      'Albums / Artist / [Year] Album; Singles';
+
+  @override
+  String get albumFolderAlbumOnly => 'Albums / Album; Singles';
+
+  @override
+  String get albumFolderYearAlbum => 'Albums / [Year] Album; Singles';
+
+  @override
+  String get albumFolderArtistAlbumSingles =>
+      'Artist / Album; Artist / Singles';
+
+  @override
+  String get albumFolderArtistAlbumFlat => 'Artist / Album; singles in Artist';
+
+  @override
+  String get singleFilenameTemplateTitle => 'Single filename template';
+
+  @override
+  String get folderRulesSinglePreview => 'Single release preview';
 }

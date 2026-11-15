@@ -72,6 +72,22 @@ void main() {
     await db.close();
     await root.delete(recursive: true);
   });
+  test('separated singles already in place have no planned moves', () async {
+    const track = Track(id: 'qobuz:single', name: 'Song', artists: 'Artist',
+      albumName: 'Record', albumType: 'ep', totalTracks: 2, trackNumber: 1);
+    final file = File('${root.path}/Artist/Singles/Song.flac');
+    await file.parent.create(recursive: true);
+    await file.writeAsString('audio');
+    await db.upsert(HistoryEntry(id: 'single', track: track, service: 'qobuz',
+      filePath: file.path, downloadedAt: DateTime(2026), fileSize: 5));
+    final p = await service.plan(root: root.path,
+      mode: FolderOrganization.artistAlbum,
+      rules: const FolderRules(separateSingles: true,
+        albumFolderStructure: 'artist_album_singles', singleFilenameTemplate: '{title}'));
+    expect(p.ready, 0);
+    expect(p.unchanged, 1);
+    expect(p.items.single.target, file.path);
+  });
   test(
     'planner dry run uses persisted multidisc/date/playlist metadata',
     () async {

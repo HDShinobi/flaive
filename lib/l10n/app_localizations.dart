@@ -2401,6 +2401,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save spectrogram'**
   String get audioAnalysisSpectrogramSaveFailed;
+
+  /// No description provided for @useAlbumArtistForFoldersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use album artist for folders'**
+  String get useAlbumArtistForFoldersTitle;
+
+  /// No description provided for @usePrimaryArtistOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use primary artist only'**
+  String get usePrimaryArtistOnlyTitle;
+
+  /// No description provided for @filterContributingArtistsInAlbumArtistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter contributing album artists'**
+  String get filterContributingArtistsInAlbumArtistTitle;
+
+  /// No description provided for @filterContributingArtistsInAlbumArtistHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep only the primary album artist in folders and metadata.'**
+  String get filterContributingArtistsInAlbumArtistHelp;
+
+  /// No description provided for @separateSinglesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate singles'**
+  String get separateSinglesTitle;
+
+  /// No description provided for @albumFolderStructureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Album folder structure'**
+  String get albumFolderStructureTitle;
+
+  /// No description provided for @albumFolderArtistAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums / Artist / Album; Singles'**
+  String get albumFolderArtistAlbum;
+
+  /// No description provided for @albumFolderArtistYearAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums / Artist / [Year] Album; Singles'**
+  String get albumFolderArtistYearAlbum;
+
+  /// No description provided for @albumFolderAlbumOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums / Album; Singles'**
+  String get albumFolderAlbumOnly;
+
+  /// No description provided for @albumFolderYearAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums / [Year] Album; Singles'**
+  String get albumFolderYearAlbum;
+
+  /// No description provided for @albumFolderArtistAlbumSingles.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist / Album; Artist / Singles'**
+  String get albumFolderArtistAlbumSingles;
+
+  /// No description provided for @albumFolderArtistAlbumFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist / Album; singles in Artist'**
+  String get albumFolderArtistAlbumFlat;
+
+  /// No description provided for @singleFilenameTemplateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single filename template'**
+  String get singleFilenameTemplateTitle;
+
+  /// No description provided for @folderRulesSinglePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Single release preview'**
+  String get folderRulesSinglePreview;
 }
 
 class _AppLocalizationsDelegate

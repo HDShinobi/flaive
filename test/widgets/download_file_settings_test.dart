@@ -7,6 +7,48 @@ import 'package:lossless_music_download/providers/download_options_provider.dart
 import 'package:lossless_music_download/screens/download_file_settings_screen.dart';
 
 void main() {
+  testWidgets('folder controls and single editor use saved rules in previews', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'separate_singles': true,
+      'album_folder_structure': 'artist_album_singles',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(folderRulesReadyProvider.future);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const DownloadFileSettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Use album artist for folders'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Single filename template'), 200);
+    await tester.tap(find.text('Single filename template'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '{title} - {artist}');
+    await tester.pump();
+    expect(
+      find.textContaining(
+        'Sample Artist/Singles/Sample Song - Sample Artist.flac',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      c.read(folderRulesProvider).singleFilenameTemplate,
+      '{title} - {artist}',
+    );
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('template editor previews drafts and never saves invalid input', (
     tester,
   ) async {

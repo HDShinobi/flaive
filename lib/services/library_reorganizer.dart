@@ -215,6 +215,7 @@ class LibraryReorganizer {
   Future<LibraryReorganizationPlan> plan({
     required String root,
     required FolderOrganization mode,
+    FolderRules rules = const FolderRules(),
     String filenameTemplate = '',
     String albumFolderTemplate = '',
     Set<String>? selection,
@@ -223,6 +224,7 @@ class LibraryReorganizer {
     () => _plan(
       root: root,
       mode: mode,
+      rules: rules,
       filenameTemplate: filenameTemplate,
       albumFolderTemplate: albumFolderTemplate,
       selection: selection,
@@ -233,6 +235,7 @@ class LibraryReorganizer {
   Future<LibraryReorganizationPlan> _plan({
     required String root,
     required FolderOrganization mode,
+    FolderRules rules = const FolderRules(),
     String filenameTemplate = '',
     String albumFolderTemplate = '',
     Set<String>? selection,
@@ -281,6 +284,8 @@ class LibraryReorganizer {
           trackNumber: tag?.trackNumber ?? old.trackNumber,
           discNumber: tag?.discNumber ?? old.discNumber,
           totalDiscs: tag?.totalDiscs ?? old.totalDiscs,
+          totalTracks: tag?.totalTracks ?? old.totalTracks,
+          albumType: old.albumType,
           releaseDate: text(tag?.releaseDate) ?? old.releaseDate,
           playlistPosition: old.playlistPosition,
           isrc: old.isrc ?? tag?.isrc,
@@ -289,6 +294,7 @@ class LibraryReorganizer {
           root,
           track,
           mode: mode,
+          rules: rules,
           filenameTemplate: filenameTemplate,
           albumFolderTemplate: albumFolderTemplate,
           quality: entry.quality,

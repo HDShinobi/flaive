@@ -4,6 +4,151 @@ import 'package:lossless_music_download/services/download_paths.dart';
 import 'package:lossless_music_download/services/download_templates.dart';
 
 void main() {
+  test('separate singles uses every upstream folder tree including Albums', () {
+    const single = Track(
+      id: 's',
+      name: 'Song',
+      artists: 'Artist',
+      albumName: 'Record',
+      albumType: 'single',
+      releaseDate: '2026-01-01',
+    );
+    const album = Track(
+      id: 'a',
+      name: 'Song',
+      artists: 'Artist',
+      albumName: 'Record',
+      albumType: 'album',
+      releaseDate: '2026-01-01',
+    );
+    const trees = {
+      'artist_album': ('Singles', 'Albums/Artist/Record'),
+      'artist_year_album': ('Singles', 'Albums/Artist/[2026] Record'),
+      'album_only': ('Singles', 'Albums/Record'),
+      'year_album': ('Singles', 'Albums/[2026] Record'),
+      'artist_album_singles': ('Artist/Singles', 'Artist/Record'),
+      'artist_album_flat': ('Artist', 'Artist/Record'),
+    };
+    for (final entry in trees.entries) {
+      for (final mode in FolderOrganization.values) {
+        final rules = FolderRules(
+          separateSingles: true,
+          albumFolderStructure: entry.key,
+        );
+        expect(
+          resolveDownloadTarget('/dl', single, mode: mode, rules: rules).dir,
+          '/dl/${entry.value.$1}',
+        );
+        expect(
+          resolveDownloadTarget('/dl', album, mode: mode, rules: rules).dir,
+          '/dl/${entry.value.$2}',
+        );
+      }
+    }
+  });
+  test('single template overrides normal filename; empty falls back', () {
+    const single = Track(
+      id: 's',
+      name: 'Song',
+      artists: 'Artist',
+      albumName: 'Record',
+      albumType: 'ep',
+      trackNumber: 1,
+    );
+    final target = resolveDownloadTarget(
+      '/dl',
+      single,
+      mode: FolderOrganization.artistAlbum,
+      filenameTemplate: '{title}',
+      albumFolderTemplate: 'Custom/{album}',
+      rules: const FolderRules(
+        separateSingles: true,
+        singleFilenameTemplate: '{title} - {artist}',
+      ),
+    );
+    expect(target.dir, '/dl/Singles');
+    expect(target.template, '{title} - {artist}');
+    expect(
+      resolveDownloadTarget(
+        '/dl',
+        single,
+        mode: FolderOrganization.artistAlbum,
+        filenameTemplate: '{title}',
+        rules: const FolderRules(),
+      ).template,
+      '{title}',
+    );
+    const album = Track(
+      id: 'a',
+      name: 'Song',
+      artists: 'Artist',
+      albumName: 'Record',
+      albumType: 'album',
+    );
+    expect(
+      resolveDownloadTarget(
+        '/dl',
+        album,
+        mode: FolderOrganization.artistAlbum,
+        albumFolderTemplate: 'Custom/{album}',
+        rules: const FolderRules(separateSingles: true),
+      ).dir,
+      '/dl/Custom/Record',
+    );
+  });
+  test('default FolderRules preserves existing path fixtures', () {
+    const fixtures = [
+      (
+        Track(
+          id: 'a',
+          name: 'Song',
+          artists: 'AC/DC',
+          albumName: 'Album',
+          discNumber: 2,
+          totalDiscs: 2,
+          trackNumber: 3,
+        ),
+        'AC DC/Album',
+        '{disc}-{track}. {title}',
+      ),
+      (
+        Track(
+          id: 'b',
+          name: 'Song',
+          artists: 'Post Malone feat. Taylor Swift',
+          albumName: 'Fortnight',
+          trackNumber: 1,
+        ),
+        'Post Malone/Fortnight',
+        '{track}. {title}',
+      ),
+      (
+        Track(
+          id: 'c',
+          name: 'Song',
+          artists: 'Various Artists',
+          albumArtist: 'Hans Zimmer',
+          albumName: 'Dune',
+        ),
+        'Hans Zimmer/Dune',
+        '{title}',
+      ),
+      (
+        Track(id: 'd', name: 'Song', artists: 'Taylor Swift', albumName: ''),
+        'Taylor Swift',
+        '{title}',
+      ),
+    ];
+    for (final (track, folder, template) in fixtures) {
+      final target = resolveDownloadTarget(
+        '/dl',
+        track,
+        mode: FolderOrganization.artistAlbum,
+        rules: const FolderRules(),
+      );
+      expect(target, (dir: '/dl/$folder', template: template));
+    }
+  });
   const track = Track(
     id: 'x',
     name: 'Song',

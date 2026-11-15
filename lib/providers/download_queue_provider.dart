@@ -16,6 +16,7 @@ import '../services/app_log.dart';
 import '../services/backend_bridge.dart';
 import '../services/container_remux_service.dart';
 import '../services/download_templates.dart';
+import '../services/download_paths.dart';
 import '../services/ffmpeg_metadata_service.dart';
 import '../services/native_download_worker.dart';
 import '../services/history_database.dart';
@@ -163,10 +164,12 @@ final canDownloadAnywayProvider = FutureProvider.autoDispose.family<bool, String
   }
   final directory = ref.watch(downloadDirProvider.future);
   ref.watch(folderOrganizationProvider);
+  ref.watch(folderRulesProvider);
   ref.watch(filenameTemplateProvider);
   ref.watch(albumFolderTemplateProvider);
   await Future.wait([
     ref.read(folderOrganizationProvider.notifier).ready,
+    ref.read(folderRulesReadyProvider.future),
     ref.read(filenameTemplateProvider.notifier).ready,
     ref.read(albumFolderTemplateProvider.notifier).ready,
   ]);
@@ -305,6 +308,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       // request. These notifiers expose defaults until their startup load ends.
       await Future.wait([
         ref.read(folderOrganizationProvider.notifier).ready,
+        ref.read(folderRulesReadyProvider.future),
         ref.read(filenameTemplateProvider.notifier).ready,
         ref.read(albumFolderTemplateProvider.notifier).ready,
         ref.read(artistTagModeProvider.notifier).ready,
@@ -425,6 +429,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
   }) {
     return resolveDownloadTarget(baseDir, track,
       mode: ref.read(folderOrganizationProvider),
+      rules: ref.read(folderRulesProvider),
       filenameTemplate: ref.read(filenameTemplateProvider),
       albumFolderTemplate: ref.read(albumFolderTemplateProvider),
       quality: quality);
@@ -492,7 +497,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       outputDir: target.dir,
       filenameFormat: target.template,
       albumName: entry.track.albumName,
-      albumArtist: entry.track.albumArtist,
+      albumArtist: albumArtistForMetadata(
+        entry.track.albumArtist, ref.read(folderRulesProvider)),
       isrc: entry.track.isrc,
       spotifyId: spotifyId,
       qobuzId: qobuzId,
@@ -775,7 +781,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         outputDir: target.dir,
         filenameFormat: target.template,
         albumName: next.track.albumName,
-        albumArtist: next.track.albumArtist,
+        albumArtist: albumArtistForMetadata(
+          next.track.albumArtist, ref.read(folderRulesProvider)),
         isrc: next.track.isrc,
         spotifyId: spotifyId,
         qobuzId: qobuzId,
@@ -905,7 +912,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         'title': track.name,
         'artist': track.artists,
         if (track.albumName != null) 'album': track.albumName!,
-        if (track.albumArtist != null) 'albumArtist': track.albumArtist!,
+        'albumArtist': ?albumArtistForMetadata(
+          track.albumArtist, ref.read(folderRulesProvider)),
         if (track.trackNumber != null) 'trackNumber': '${track.trackNumber}',
         if (track.releaseDate != null) 'year': _yearOf(track.releaseDate),
         if (track.isrc != null) 'isrc': track.isrc!,
@@ -941,7 +949,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       if (track.name.isNotEmpty) 'TITLE': track.name,
       if (track.artists.isNotEmpty) 'ARTIST': track.artists,
       if ((track.albumName ?? '').isNotEmpty) 'ALBUM': track.albumName!,
-      if ((track.albumArtist ?? '').isNotEmpty) 'ALBUMARTIST': track.albumArtist!,
+      'ALBUMARTIST': ?albumArtistForMetadata(
+        track.albumArtist, ref.read(folderRulesProvider)),
       if ((track.releaseDate ?? '').isNotEmpty) 'DATE': track.releaseDate!,
       if ((track.isrc ?? '').isNotEmpty) 'ISRC': track.isrc!,
       if ((track.genre ?? '').isNotEmpty) 'GENRE': track.genre!,
