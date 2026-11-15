@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/download_progress.dart';
@@ -56,6 +57,7 @@ class DownloadEntry {
   /// Download intent — preserved so retry can re-enqueue with the same params.
   final String? service;
   final String? quality;
+  final String? playlistName;
 
   /// Extension that raised a verification_required error, as reported by the
   /// backend result's `service` field. May differ from [service] when the
@@ -83,6 +85,7 @@ class DownloadEntry {
     this.error,
     this.service,
     this.quality,
+    this.playlistName,
     this.verificationService,
     this.resolvedService,
     this.filePath,
@@ -90,6 +93,57 @@ class DownloadEntry {
     this.replacedFakeHiRes = false,
     this.bypassDuplicateCheck = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'track': {
+      'id': track.id,
+      'name': track.name,
+      'artists': track.artists,
+      'album_name': track.albumName,
+      'album_artist': track.albumArtist,
+      'cover_url': track.coverUrl,
+      'isrc': track.isrc,
+      'duration_ms': track.durationMs,
+      'preview_url': track.previewUrl,
+      'source': track.source,
+      'track_number': track.trackNumber,
+      'disc_number': track.discNumber,
+      'total_tracks': track.totalTracks,
+      'total_discs': track.totalDiscs,
+      'release_date': track.releaseDate,
+      'composer': track.composer,
+      'audio_quality': track.audioQuality,
+      'audio_modes': track.audioModes,
+      'artist_id': track.artistId,
+      'album_id': track.albumId,
+      'genre': track.genre,
+      'label': track.label,
+      'copyright': track.copyright,
+      'explicit': track.explicit,
+      'upc': track.upc,
+      'album_type': track.albumType,
+      'deezer_id': track.deezerId,
+      'playlist_position': track.playlistPosition,
+    },
+    'item_id': itemId, 'status': status, 'service': service, 'quality': quality,
+    'playlist_name': playlistName, 'file_path': filePath, 'error': error,
+    'resolved_service': resolvedService, 'verification_service': verificationService,
+    'already_in_library': alreadyInLibrary, 'replaced_fake_hires': replacedFakeHiRes,
+    'bypass_duplicate_check': bypassDuplicateCheck,
+  };
+
+  factory DownloadEntry.fromJson(Map<String, dynamic> json) => DownloadEntry(
+    track: Track.fromJson(json['track'] as Map<String, dynamic>),
+    itemId: json['item_id'] as String, status: json['status'] as String,
+    progress: json['status'] == 'done' ? 1 : 0, bytesReceived: 0,
+    service: json['service'] as String?, quality: json['quality'] as String?,
+    playlistName: json['playlist_name'] as String?, filePath: json['file_path'] as String?,
+    error: json['error'] as String?, resolvedService: json['resolved_service'] as String?,
+    verificationService: json['verification_service'] as String?,
+    alreadyInLibrary: json['already_in_library'] == true,
+    replacedFakeHiRes: json['replaced_fake_hires'] == true,
+    bypassDuplicateCheck: json['bypass_duplicate_check'] == true,
+  );
 
   DownloadEntry copyWith({
     String? status,
@@ -117,6 +171,7 @@ class DownloadEntry {
       error: alreadyInLibrary == true ? null : error ?? this.error,
       service: service,
       quality: quality,
+      playlistName: playlistName,
       verificationService: verificationService ?? this.verificationService,
       resolvedService: resolvedService ?? this.resolvedService,
       filePath: filePath ?? this.filePath,
@@ -177,7 +232,7 @@ final canDownloadAnywayProvider = FutureProvider.autoDispose.family<bool, String
   if (!ref.mounted) return false;
   final target = ref
       .read(downloadQueueProvider.notifier)
-      ._resolveOutputTarget(dir, entry.track, quality: entry.quality);
+      ._resolveOutputTarget(dir, entry.track, quality: entry.quality, playlistName: entry.playlistName);
   // DownloadRequest leaves output_ext unset: the engine's destination defaults
   // to .flac. A provider may report a different container after downloading.
   final basename = DownloadTemplates.preview(
@@ -191,6 +246,58 @@ final canDownloadAnywayProvider = FutureProvider.autoDispose.family<bool, String
 });
 
 class DownloadQueueController extends Notifier<List<DownloadEntry>> {
+  static const _queueKey = 'download_queue';
+  Future<void> _saveTail = Future.value();
+  bool _restored = false;
+  String? _lastSnapshot;
+
+  void _saveQueue() {
+    if (!_restored) return;
+    final snapshot = jsonEncode(state.map((e) => e.toJson()).toList());
+    if (snapshot == _lastSnapshot) return;
+    _lastSnapshot = snapshot;
+    _saveTail = _saveTail.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_queueKey, snapshot);
+    }).catchError((Object e) {
+      debugPrint('[DownloadQueue] snapshot save failed: $e');
+    });
+  }
+
+  Future<void> _restoreQueue() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = jsonDecode(prefs.getString(_queueKey) ?? '[]') as List;
+      final restored = <DownloadEntry>[];
+      for (final value in raw) {
+        try {
+          var entry = DownloadEntry.fromJson(value as Map<String, dynamic>);
+          // A native worker may have been interrupted. Require explicit retry
+          // rather than automatically starting a second download of that file.
+          if (entry.status != 'done' && entry.status != 'failed') {
+            entry = entry.copyWith(status: 'failed');
+          }
+          restored.add(entry);
+        } catch (e) {
+          debugPrint('[DownloadQueue] invalid snapshot entry: $e');
+        }
+      }
+      if (!ref.mounted) return;
+      final currentIds = state.map((e) => e.itemId).toSet();
+      state = [...state, ...restored.where((e) => !currentIds.contains(e.itemId))];
+      for (final entry in restored) {
+        ref.read(downloadLabelsProvider.notifier).put(entry.itemId, entry.track);
+      }
+    } catch (e) {
+      debugPrint('[DownloadQueue] snapshot restore failed: $e');
+    } finally {
+      if (ref.mounted) {
+        _restored = true;
+        _saveQueue();
+      }
+    }
+  }
+
   final Map<String, Sample> _samples = {};
   final Map<String, Set<String>> _loggedLifecycleEvents = {};
 
@@ -249,6 +356,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
 
   @override
   List<DownloadEntry> build() {
+    listenSelf((_, _) => _saveQueue());
+    Future.microtask(_restoreQueue);
     final lifecycle = AppLifecycleListener(onResume: () {
       if (ref.mounted) unawaited(_processQueue());
     });
@@ -263,7 +372,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
     return [];
   }
 
-  Future<void> enqueue(Track track, {String? service, String? quality,
+  Future<void> enqueue(Track track, {String? service, String? quality, String? playlistName,
       bool bypassDuplicateCheck = false}) async {
     final itemId = 'dl_${DateTime.now().microsecondsSinceEpoch}_${track.id}';
 
@@ -280,6 +389,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         bytesReceived: 0,
         service: service,
         quality: quality,
+        playlistName: playlistName,
         bypassDuplicateCheck: bypassDuplicateCheck,
       ),
       ...state,
@@ -403,7 +513,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         }
         final stat = await File(path).stat();
         await db.upsert(HistoryEntry(id: entry.itemId, track: entry.track,
-          service: service, filePath: path,
+          service: service, filePath: path, playlistName: entry.playlistName,
           fileSize: stat.type == FileSystemEntityType.file ? stat.size : null,
           quality: entry.replacedFakeHiRes ? 'cd' : entry.quality, downloadedAt: DateTime.now()));
         _recordedHistory[entry.itemId] = fingerprint;
@@ -426,13 +536,14 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
     String baseDir,
     Track track, {
     String? quality,
+    String? playlistName,
   }) {
     return resolveDownloadTarget(baseDir, track,
       mode: ref.read(folderOrganizationProvider),
       rules: ref.read(folderRulesProvider),
       filenameTemplate: ref.read(filenameTemplateProvider),
       albumFolderTemplate: ref.read(albumFolderTemplateProvider),
-      quality: quality);
+      quality: quality, playlistName: playlistName);
   }
 
   static String _yearOf(String? releaseDate) {
@@ -489,7 +600,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       spotifyId = null;
     }
 
-    final target = _resolveOutputTarget(dir, entry.track, quality: entry.quality);
+    final target = _resolveOutputTarget(dir, entry.track, quality: entry.quality, playlistName: entry.playlistName);
 
     final req = DownloadRequest(
       trackName: entry.track.name,
@@ -751,7 +862,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         }
       } catch (_) {}
 
-      final target = _resolveOutputTarget(dir, next.track, quality: next.quality);
+      final target = _resolveOutputTarget(dir, next.track, quality: next.quality, playlistName: next.playlistName);
 
       if (await _skipIndexedDuplicate(next, target.dir)) throw _DuplicateSkipped();
 
@@ -1063,7 +1174,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
     final entry = state.where((e) => e.itemId == itemId).firstOrNull;
     if (entry == null) return;
     _removeLocal(itemId);
-    unawaited(enqueue(entry.track, service: entry.service, quality: entry.quality,
+    unawaited(enqueue(entry.track, service: entry.service, quality: entry.quality, playlistName: entry.playlistName,
       bypassDuplicateCheck: bypassDuplicateCheck));
   }
 

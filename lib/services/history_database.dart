@@ -79,6 +79,7 @@ class HistoryEntry {
   final String filePath;
   final int? fileSize;
   final String? quality;
+  final String? playlistName;
   final DateTime downloadedAt;
 
   const HistoryEntry({
@@ -89,6 +90,7 @@ class HistoryEntry {
     required this.downloadedAt,
     this.fileSize,
     this.quality,
+    this.playlistName,
   });
 
   Map<String, Object?> toRow() {
@@ -113,6 +115,7 @@ class HistoryEntry {
       'playlist_position': track.playlistPosition,
       'duration_ms': track.durationMs,
       'quality': quality,
+      'playlist_name': playlistName,
       'file_path': filePath,
       'file_size': fileSize,
       'downloaded_at': downloadedAt.millisecondsSinceEpoch,
@@ -147,6 +150,7 @@ class HistoryEntry {
     filePath: row['file_path'] as String,
     fileSize: row['file_size'] as int?,
     quality: row['quality'] as String?,
+    playlistName: row['playlist_name'] as String?,
     downloadedAt: DateTime.fromMillisecondsSinceEpoch(
       row['downloaded_at'] as int,
     ),
@@ -157,8 +161,9 @@ class HistoryEntry {
 /// v1 holds metadata; v2 adds lookups; v3 repairs identities; v4 retains
 /// the disc/date/playlist fields needed to reapply download templates.
 /// v5 retains release classification for single-aware reorganization.
+/// v6 retains playlist names for playlist-folder reorganization.
 class HistoryDatabase {
-  static const version = 5;
+  static const version = 6;
   final String path;
   final DatabaseFactory? factory;
   Future<Database>? _opening;
@@ -255,6 +260,9 @@ class HistoryDatabase {
     if (old < 5 && next >= 5) {
       await db.execute('ALTER TABLE history ADD COLUMN album_type TEXT');
       await db.execute('ALTER TABLE history ADD COLUMN total_tracks INTEGER');
+    }
+    if (old < 6 && next >= 6) {
+      await db.execute('ALTER TABLE history ADD COLUMN playlist_name TEXT');
     }
     if (old < 3) {
       // v2 guessed Spotify for bare IDs; their provenance cannot be recovered.

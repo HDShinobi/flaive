@@ -362,6 +362,7 @@ String _folderLayoutLabel(AppLocalizations t, FolderOrganization mode) =>
       FolderOrganization.artist => t.folderLayoutArtist,
       FolderOrganization.album => t.folderLayoutAlbum,
       FolderOrganization.artistAlbum => t.folderLayoutArtistAlbum,
+      FolderOrganization.playlist => t.folderLayoutPlaylist,
     };
 
 Future<void> _pickFolderLayout(

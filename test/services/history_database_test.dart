@@ -405,11 +405,31 @@ void main() {
     expect(track.totalTracks, 2);
     expect(track.isSingle, true);
   });
+  test('v5 migration adds nullable playlist_name and round-trips it', () async {
+    await add('legacy', song);
+    final sql = await history.database;
+    if ((await sql.rawQuery('PRAGMA table_info(history)')).any((r) => r['name'] == 'playlist_name')) {
+      await sql.execute('ALTER TABLE history DROP COLUMN playlist_name');
+    }
+    await sql.setVersion(5);
+    await history.close();
+    history = HistoryDatabase(path: '${dir.path}/history.db', factory: databaseFactoryFfi);
+    final migrated = await history.database;
+    expect(await migrated.getVersion(), 6);
+    expect((await migrated.rawQuery('PRAGMA table_info(history)')).map((r) => r['name']), contains('playlist_name'));
+    final old = (await history.list()).single;
+    expect(old.track.id, song.id);
+    expect(old.playlistName, isNull);
+    await history.upsert(HistoryEntry(id: 'playlist', track: song, service: 'qobuz',
+      filePath: old.filePath, downloadedAt: DateTime(2026), playlistName: 'Mix 🎵'));
+    await history.close();
+    expect((await history.list()).firstWhere((e) => e.id == 'playlist').playlistName, 'Mix 🎵');
+  });
   test('v4 migration adds release classification without changing old rows', () async {
     await add('legacy', song);
     final sql = await history.database;
     final columns = await sql.rawQuery('PRAGMA table_info(history)');
-    for (final name in ['album_type', 'total_tracks']) {
+    for (final name in ['album_type', 'total_tracks', 'playlist_name']) {
       if (columns.any((row) => row['name'] == name)) {
         await sql.execute('ALTER TABLE history DROP COLUMN $name');
       }
@@ -442,7 +462,7 @@ void main() {
         whereArgs: [legacy.id],
       );
       // Build an actual v2 fixture rather than relabeling the current schema.
-      for (final column in ['total_discs', 'release_date', 'playlist_position', 'album_type', 'total_tracks']) {
+      for (final column in ['total_discs', 'release_date', 'playlist_position', 'album_type', 'total_tracks', 'playlist_name']) {
         await sql.execute('ALTER TABLE history DROP COLUMN $column');
       }
       await sql.setVersion(2);

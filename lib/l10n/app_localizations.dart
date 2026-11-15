@@ -2485,6 +2485,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Single release preview'**
   String get folderRulesSinglePreview;
+
+  /// No description provided for @createPlaylistFolderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create playlist folder'**
+  String get createPlaylistFolderTitle;
+
+  /// No description provided for @folderLayoutPlaylist.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist'**
+  String get folderLayoutPlaylist;
+
+  /// No description provided for @exportM3u8.
+  ///
+  /// In en, this message translates to:
+  /// **'Export M3U8'**
+  String get exportM3u8;
+
+  /// No description provided for @playlistExportDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {count} of {total} tracks'**
+  String playlistExportDone(int count, int total);
+
+  /// No description provided for @playlistExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export M3U8'**
+  String get playlistExportFailed;
 }
 
 class _AppLocalizationsDelegate

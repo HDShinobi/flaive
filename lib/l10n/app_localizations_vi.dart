@@ -1307,4 +1307,21 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get folderRulesSinglePreview => 'Xem trước đĩa đơn';
+
+  @override
+  String get createPlaylistFolderTitle => 'Tạo thư mục danh sách phát';
+
+  @override
+  String get folderLayoutPlaylist => 'Danh sách phát';
+
+  @override
+  String get exportM3u8 => 'Xuất M3U8';
+
+  @override
+  String playlistExportDone(int count, int total) {
+    return 'Đã xuất $count trong $total bài hát';
+  }
+
+  @override
+  String get playlistExportFailed => 'Không thể xuất M3U8';
 }

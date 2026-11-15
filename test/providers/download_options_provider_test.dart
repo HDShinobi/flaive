@@ -10,6 +10,7 @@ void main() {
       'filter_contributing_artists_in_album_artist': true, 'separate_singles': true,
       'album_folder_structure': 'artist_year_album',
       'single_filename_template': '{title} - {artist}',
+      'create_playlist_folder': true,
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -19,6 +20,7 @@ void main() {
     expect(rules.usePrimaryArtistOnly, true);
     expect(rules.filterContributingArtistsInAlbumArtist, true);
     expect(rules.separateSingles, true);
+    expect(rules.createPlaylistFolder, true);
     expect(rules.albumFolderStructure, 'artist_year_album');
     expect(rules.singleFilenameTemplate, '{title} - {artist}');
     await c.read(albumFolderStructureProvider.notifier).set('bad');
@@ -28,6 +30,17 @@ void main() {
     await c.read(separateSinglesProvider.notifier).set(false);
     expect(c.read(folderRulesProvider).separateSingles, false);
     expect((await SharedPreferences.getInstance()).getBool('separate_singles'), false);
+  });
+  test('playlist folder defaults off and persists opt in', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    expect(c.read(createPlaylistFolderProvider), false);
+    await c.read(createPlaylistFolderProvider.notifier).set(true);
+    c.dispose();
+    final restored = ProviderContainer();
+    addTearDown(restored.dispose);
+    await restored.read(folderRulesReadyProvider.future);
+    expect(restored.read(folderRulesProvider).createPlaylistFolder, true);
   });
   test('auto conversion prefs persist all options before payload construction', () async {
     SharedPreferences.setMockInitialValues({});

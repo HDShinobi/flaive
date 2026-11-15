@@ -303,6 +303,10 @@ final filterContributingArtistsInAlbumArtistProvider =
         false,
       ),
     );
+final createPlaylistFolderProvider = NotifierProvider<_BoolPrefNotifier, bool>(
+  () => _BoolPrefNotifier('create_playlist_folder', false),
+);
+
 final separateSinglesProvider = NotifierProvider<_BoolPrefNotifier, bool>(
   () => _BoolPrefNotifier('separate_singles', false),
 );
@@ -331,18 +335,20 @@ final folderRulesProvider = Provider<FolderRules>(
       filterContributingArtistsInAlbumArtistProvider,
     ),
     separateSingles: ref.watch(separateSinglesProvider),
+    createPlaylistFolder: ref.watch(createPlaylistFolderProvider),
     albumFolderStructure: ref.watch(albumFolderStructureProvider),
     singleFilenameTemplate: ref.watch(singleFilenameTemplateProvider),
   ),
 );
 
-/// Await the six preferences at every non-UI path-planning entry point.
+/// Await the folder preferences at every non-UI path-planning entry point.
 final folderRulesReadyProvider = FutureProvider<void>((ref) async {
   await Future.wait([
     ref.read(useAlbumArtistForFoldersProvider.notifier).ready,
     ref.read(usePrimaryArtistOnlyProvider.notifier).ready,
     ref.read(filterContributingArtistsInAlbumArtistProvider.notifier).ready,
     ref.read(separateSinglesProvider.notifier).ready,
+    ref.read(createPlaylistFolderProvider.notifier).ready,
     ref.read(albumFolderStructureProvider.notifier).ready,
     ref.read(singleFilenameTemplateProvider.notifier).ready,
   ]);

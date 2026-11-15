@@ -298,6 +298,7 @@ class LibraryReorganizer {
           filenameTemplate: filenameTemplate,
           albumFolderTemplate: albumFolderTemplate,
           quality: entry.quality,
+          playlistName: entry.playlistName,
         );
         final name = entry.filePath.split('/').last;
         final dot = name.lastIndexOf('.');

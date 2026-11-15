@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/track.dart';
+import '../providers/download_dir_provider.dart';
+import '../services/download_paths.dart';
+import '../services/m3u_playlist_service.dart';
 import '../providers/download_history_provider.dart';
 import '../providers/download_options_provider.dart';
 import '../services/backend_bridge.dart';
@@ -145,6 +148,20 @@ final _albumDataProvider =
     FutureProvider.family<AlbumData, AlbumRouteArgs>((ref, args) =>
         resolveAlbumData(ref.read(backendBridgeProvider), args));
 
+/// findBatch preserves input order and returns only history with existing files.
+final playlistExportEntriesProvider = FutureProvider.autoDispose.family<
+    List<({String path, String artist, String title, int durationSec})>, HistoryLookupBatch>((ref, batch) async {
+  ref.watch(historyRevisionProvider);
+  final db = await ref.watch(historyDatabaseProvider.future);
+  final matches = await db.findBatch(batch.tracks);
+  return [
+    for (var i = 0; i < matches.length; i++)
+      if (matches[i] != null)
+        (path: matches[i]!.filePath, artist: batch.tracks[i].artists,
+         title: batch.tracks[i].name, durationSec: (batch.tracks[i].durationMs ?? 0) ~/ 1000),
+  ];
+});
+
 // ---------------------------------------------------------------------------
 // AlbumScreen
 // ---------------------------------------------------------------------------
@@ -157,10 +174,11 @@ class AlbumScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Track track,
+    String playlistTitle,
   ) async {
     final askBefore = ref.read(askBeforeDownloadProvider);
     if (!askBefore) {
-      unawaited(ref.read(downloadQueueProvider.notifier).enqueue(track));
+      unawaited(ref.read(downloadQueueProvider.notifier).enqueue(track, playlistName: args.resourceType == 'playlist' ? playlistTitle : null));
       return;
     }
     final sources = ref
@@ -174,13 +192,15 @@ class AlbumScreen extends ConsumerWidget {
     if (!context.mounted || choice == null) return;
     unawaited(ref
         .read(downloadQueueProvider.notifier)
-        .enqueue(track, service: choice.sourceId, quality: choice.quality));
+        .enqueue(track, service: choice.sourceId, quality: choice.quality,
+          playlistName: args.resourceType == 'playlist' ? playlistTitle : null));
   }
 
   Future<void> _downloadAll(
     BuildContext context,
     WidgetRef ref,
     List<Track> tracks,
+    String playlistTitle,
   ) async {
     if (tracks.isEmpty) return;
     final sources = ref
@@ -199,7 +219,8 @@ class AlbumScreen extends ConsumerWidget {
     final queue = ref.read(downloadQueueProvider.notifier);
     for (final t in tracks) {
       unawaited(
-        queue.enqueue(t, service: choice.sourceId, quality: choice.quality),
+        queue.enqueue(t, service: choice.sourceId, quality: choice.quality,
+          playlistName: args.resourceType == 'playlist' ? playlistTitle : null),
       );
     }
     if (context.mounted) {
@@ -207,6 +228,33 @@ class AlbumScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t.batchAddedToQueue(tracks.length))),
       );
+    }
+  }
+
+  Future<void> _exportM3u8(BuildContext context, WidgetRef ref, AlbumData data) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      // Refresh file existence at click time as files can be deleted externally.
+      final batch = HistoryLookupBatch(data.tracks);
+      ref.invalidate(playlistExportEntriesProvider(batch));
+      final entries = await ref.read(playlistExportEntriesProvider(batch).future);
+      if (!context.mounted) return;
+      final root = await ref.read(downloadDirProvider.future);
+      if (!context.mounted) return;
+      await ref.read(folderRulesReadyProvider.future);
+      if (!context.mounted) return;
+      final folders = ref.read(folderRulesProvider).createPlaylistFolder;
+      final directory = folders ? '$root/${sanitizePlaylistFolder(data.name)}' : root;
+      if (entries.isNotEmpty) {
+        await M3uPlaylistService.write(playlistName: data.name, entries: entries, m3uDir: directory);
+      }
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(t.playlistExportDone(entries.length, data.tracks.length))));
+    } catch (error) {
+      debugPrint('[PlaylistExport] $error');
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(t.playlistExportFailed)));
     }
   }
 
@@ -224,6 +272,9 @@ class AlbumScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('$e')),
         data: (data) {
           final downloaded = ref.watch(downloadedTracksProvider(HistoryLookupBatch(data.tracks))).value ?? const <String>{};
+          final exportEntries = args.resourceType == 'playlist'
+              ? ref.watch(playlistExportEntriesProvider(HistoryLookupBatch(data.tracks))).value
+              : null;
           return Column(
             children: [
               // Album header: cover + name + artist
@@ -284,10 +335,20 @@ class AlbumScreen extends ConsumerWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () => _downloadAll(context, ref, data.tracks),
+                      onPressed: () => _downloadAll(context, ref, data.tracks, data.name),
                       icon: const Icon(Icons.download_outlined),
                       label: Text(t.downloadAll),
                     ),
+                  ),
+                ),
+              if (args.resourceType == 'playlist')
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: OutlinedButton.icon(
+                    onPressed: exportEntries?.isNotEmpty == true
+                        ? () => _exportM3u8(context, ref, data) : null,
+                    icon: const Icon(Icons.playlist_play),
+                    label: Text(t.exportM3u8),
                   ),
                 ),
               const Divider(height: 1),
@@ -301,7 +362,7 @@ class AlbumScreen extends ConsumerWidget {
                       track: data.tracks[i],
                       downloaded: downloaded.contains(historyLookupKey(data.tracks[i])),
                       qualityHint: data.tracks[i].qualityBadge,
-                      onDownload: () => _onDownload(context, ref, data.tracks[i]),
+                      onDownload: () => _onDownload(context, ref, data.tracks[i], data.name),
                     ),
                   ),
                 ),

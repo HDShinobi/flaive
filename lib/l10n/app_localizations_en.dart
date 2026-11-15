@@ -1311,4 +1311,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get folderRulesSinglePreview => 'Single release preview';
+
+  @override
+  String get createPlaylistFolderTitle => 'Create playlist folder';
+
+  @override
+  String get folderLayoutPlaylist => 'Playlist';
+
+  @override
+  String get exportM3u8 => 'Export M3U8';
+
+  @override
+  String playlistExportDone(int count, int total) {
+    return 'Exported $count of $total tracks';
+  }
+
+  @override
+  String get playlistExportFailed => 'Could not export M3U8';
 }

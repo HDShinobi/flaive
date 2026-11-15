@@ -144,6 +144,27 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  test('playlistName survives queue restore and retry with saved folder option', () async {
+    SharedPreferences.setMockInitialValues({'create_playlist_folder': true});
+    final bridge = _FakeBridge()..throwOnDownload = true;
+    final c = _makeContainer(bridge);
+    await c.read(downloadQueueProvider.notifier).enqueue(_track, playlistName: 'Mix');
+    await _pump();
+    expect(bridge.downloadCalls.single.outputDir, '/fake/downloads/Mix/Test Artist/Test Album');
+    final entry = c.read(downloadQueueProvider).single;
+    expect(entry.copyWith(status: 'failed').playlistName, 'Mix');
+    await _pump();
+    c.dispose();
+    final restored = _makeContainer(bridge);
+    restored.read(downloadQueueProvider);
+    await _pump();
+    expect(restored.read(downloadQueueProvider).single.playlistName, 'Mix');
+    restored.read(downloadQueueProvider.notifier).retry(entry.itemId);
+    await _pump();
+    expect(restored.read(downloadQueueProvider).single.playlistName, 'Mix');
+    expect(bridge.downloadCalls.last.outputDir, '/fake/downloads/Mix/Test Artist/Test Album');
+    restored.dispose();
+  });
   test('cold start uses saved templates and tags in the first request', () async {
     SharedPreferences.setMockInitialValues({
       'filename_template': '{title} - {artist}',

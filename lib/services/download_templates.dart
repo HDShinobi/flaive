@@ -179,6 +179,7 @@ abstract final class DownloadTemplates {
   String filenameTemplate = '',
   String albumFolderTemplate = '',
   String? quality,
+  String? playlistName,
   FolderRules rules = const FolderRules(),
 }) {
   if (track.isSingle &&
@@ -214,7 +215,7 @@ abstract final class DownloadTemplates {
     'disc': (track.discNumber ?? 0) > 0 ? '${track.discNumber}' : '',
     'year': date.length >= 4 ? date.substring(0, 4) : '',
   });
-  final relative =
+  var relative =
       !(rules.separateSingles && track.isSingle) &&
           albumFolderTemplate.isNotEmpty &&
           DownloadTemplates.validate(albumFolderTemplate, folder: true) == null
@@ -230,6 +231,11 @@ abstract final class DownloadTemplates {
           ),
           rules: rules,
         );
+  if (mode == FolderOrganization.playlist) {
+    relative = playlistName == null ? '' : sanitizePlaylistFolder(playlistName);
+  } else if (rules.createPlaylistFolder && playlistName != null) {
+    relative = [sanitizePlaylistFolder(playlistName), if (relative.isNotEmpty) relative].join('/');
+  }
   return (
     dir: relative.isEmpty
         ? baseDir

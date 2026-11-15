@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:lossless_music_download/services/history_database.dart';
+import 'package:lossless_music_download/providers/download_history_provider.dart';
 
 import 'package:flutter/widgets.dart';
 import 'package:lossless_music_download/services/app_log.dart';
@@ -155,6 +159,40 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  test('native playlist target and completion history retain playlist name without automatic M3U', () async {
+    sqfliteFfiInit();
+    final root = await Directory.systemTemp.createTemp('playlist_native_');
+    final db = HistoryDatabase(path: '${root.path}/history.db', factory: databaseFactoryFfi);
+    SharedPreferences.setMockInitialValues({'create_playlist_folder': true});
+    final file = File('${root.path}/Mix/Native Artist/Native Song.flac');
+    await file.parent.create(recursive: true);
+    await file.writeAsString('audio');
+    final worker = _FakeNativeWorker()
+      ..failItemsWith = (id) => NativeWorkerItemState.fromJson({
+        'item_id': id, 'status': 'done', 'resolved_service': 'qobuz', 'file_path': file.path,
+      });
+    final c = ProviderContainer(overrides: [
+      backendBridgeProvider.overrideWithValue(_UnusedBridge()),
+      downloadDirPathProvider.overrideWithValue(Future.value(root.path)),
+      nativeDownloadWorkerProvider.overrideWithValue(worker),
+      historyDatabaseProvider.overrideWith((ref) async => db),
+    ]);
+    try {
+      await c.read(downloadQueueProvider.notifier).enqueue(_track, playlistName: 'Mix');
+      for (var i = 0; i < 100 && (await db.list()).isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      expect(jsonDecode(worker.startedBatches.single.single['request_json'] as String)['output_dir'], '${root.path}/Mix/Native Artist');
+      expect((await db.list()).single.playlistName, 'Mix');
+      expect((await db.list()).single.filePath, file.path);
+      expect(await root.list(recursive: true).any((f) => f.path.endsWith('.m3u8')), false);
+    } finally {
+      c.dispose();
+      await db.close();
+      await root.delete(recursive: true);
+    }
   });
 
   test('provider transfer limit follows upstream defaults and bounds', () {

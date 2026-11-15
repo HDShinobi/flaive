@@ -72,6 +72,20 @@ void main() {
     await db.close();
     await root.delete(recursive: true);
   });
+  test('reorganize keeps playlist-folder files in place', () async {
+    final file = File('${root.path}/Mix/Artist/Album/Song.flac');
+    await file.parent.create(recursive: true);
+    await file.writeAsString('audio');
+    await db.upsert(HistoryEntry(id: 'playlist',
+      track: const Track(id: 'qobuz:p', name: 'Song', artists: 'Artist', albumName: 'Album'),
+      service: 'qobuz', filePath: file.path, downloadedAt: DateTime(2026), playlistName: 'Mix'));
+    final p = await service.plan(root: root.path, mode: FolderOrganization.artistAlbum,
+      filenameTemplate: '{title}', rules: const FolderRules(createPlaylistFolder: true));
+    expect(p.unchanged, 1);
+    expect(p.items.single.target, file.path);
+    expect((await service.apply(p)).moved, 0);
+    expect(await file.exists(), true);
+  });
   test('separated singles already in place have no planned moves', () async {
     const track = Track(id: 'qobuz:single', name: 'Song', artists: 'Artist',
       albumName: 'Record', albumType: 'ep', totalTracks: 2, trackNumber: 1);

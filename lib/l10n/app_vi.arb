@@ -627,5 +627,20 @@
   "albumFolderArtistAlbumSingles": "Nghệ sĩ / Album; Nghệ sĩ / Singles",
   "albumFolderArtistAlbumFlat": "Nghệ sĩ / Album; đĩa đơn trong Nghệ sĩ",
   "singleFilenameTemplateTitle": "Mẫu tên tệp đĩa đơn",
-  "folderRulesSinglePreview": "Xem trước đĩa đơn"
+  "folderRulesSinglePreview": "Xem trước đĩa đơn",
+  "createPlaylistFolderTitle": "Tạo thư mục danh sách phát",
+  "folderLayoutPlaylist": "Danh sách phát",
+  "exportM3u8": "Xuất M3U8",
+  "playlistExportDone": "Đã xuất {count} trong {total} bài hát",
+  "playlistExportFailed": "Không thể xuất M3U8",
+  "@playlistExportDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

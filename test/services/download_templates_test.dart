@@ -4,6 +4,39 @@ import 'package:lossless_music_download/services/download_paths.dart';
 import 'package:lossless_music_download/services/download_templates.dart';
 
 void main() {
+  test('playlist sanitization stays one visible segment and keeps emoji', () {
+    expect(sanitizePlaylistFolder('a/b'), 'a b');
+    expect(sanitizePlaylistFolder('..'), 'Playlist');
+    expect(sanitizePlaylistFolder('   '), 'Playlist');
+    expect(sanitizePlaylistFolder('🎵 Mix'), '🎵 Mix');
+    expect(sanitizePlaylistFolder('a..b\\c:*?"<>|'), 'a.b c');
+  });
+  test('playlist prefix applies to normal and custom folders', () {
+    final track = DownloadTemplates.sample();
+    for (final folder in ['', '{album}']) {
+      final target = resolveDownloadTarget('/music', track,
+        mode: FolderOrganization.artistAlbum, playlistName: 'Mix/2026',
+        albumFolderTemplate: folder,
+        rules: const FolderRules(createPlaylistFolder: true));
+      expect(target.dir, folder.isEmpty
+        ? '/music/Mix 2026/Sample Artist/Sample Album'
+        : '/music/Mix 2026/Sample Album');
+    }
+    expect(resolveDownloadTarget('/music', track, mode: FolderOrganization.none,
+      playlistName: 'Mix').dir, '/music');
+  });
+  test('playlist organization overrides custom folders and singles', () {
+    expect(FolderOrganization.fromStorage('playlist'), FolderOrganization.playlist);
+    expect(FolderOrganization.playlist.storageValue, 'playlist');
+    final target = resolveDownloadTarget('/music', DownloadTemplates.sample(singleRelease: true),
+      mode: FolderOrganization.playlist, playlistName: 'Mix',
+      albumFolderTemplate: '{album}',
+      rules: const FolderRules(createPlaylistFolder: true, separateSingles: true));
+    expect(target.dir, '/music/Mix');
+    expect(buildRelativeFolder(FolderOrganization.playlist,
+      const FolderMetadata(artist: 'Artist'), playlistName: 'Mix'), 'Mix');
+  });
+
   test('separate singles uses every upstream folder tree including Albums', () {
     const single = Track(
       id: 's',
@@ -30,7 +63,7 @@ void main() {
       'artist_album_flat': ('Artist', 'Artist/Record'),
     };
     for (final entry in trees.entries) {
-      for (final mode in FolderOrganization.values) {
+      for (final mode in FolderOrganization.values.where((m) => m != FolderOrganization.playlist)) {
         final rules = FolderRules(
           separateSingles: true,
           albumFolderStructure: entry.key,

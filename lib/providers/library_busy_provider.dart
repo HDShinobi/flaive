@@ -92,6 +92,7 @@ Future<bool> isActiveLibraryDownloadPath(Ref ref, String path) async {
       filenameTemplate: ref.read(filenameTemplateProvider),
       albumFolderTemplate: ref.read(albumFolderTemplateProvider),
       quality: entry.quality,
+      playlistName: entry.playlistName,
     );
     final name = DownloadTemplates.preview(
       target.template,

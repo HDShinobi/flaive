@@ -627,5 +627,20 @@
   "albumFolderArtistAlbumSingles": "Artist / Album; Artist / Singles",
   "albumFolderArtistAlbumFlat": "Artist / Album; singles in Artist",
   "singleFilenameTemplateTitle": "Single filename template",
-  "folderRulesSinglePreview": "Single release preview"
+  "folderRulesSinglePreview": "Single release preview",
+  "createPlaylistFolderTitle": "Create playlist folder",
+  "folderLayoutPlaylist": "Playlist",
+  "exportM3u8": "Export M3U8",
+  "playlistExportDone": "Exported {count} of {total} tracks",
+  "playlistExportFailed": "Could not export M3U8",
+  "@playlistExportDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

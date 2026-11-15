@@ -24,7 +24,10 @@ enum FolderOrganization {
   album,
 
   /// `<Artist>/<Album>/`
-  artistAlbum;
+  artistAlbum,
+
+  /// `<Playlist>/` (flat when no playlist context).
+  playlist;
 
   /// Persisted form. Matches SpotiFLAC's `folderOrganization` setting values so
   /// the two apps can read each other's settings.
@@ -33,6 +36,7 @@ enum FolderOrganization {
         FolderOrganization.artist => 'artist',
         FolderOrganization.album => 'album',
         FolderOrganization.artistAlbum => 'artist_album',
+        FolderOrganization.playlist => 'playlist',
       };
 
   static FolderOrganization fromStorage(String? value) =>
@@ -41,6 +45,7 @@ enum FolderOrganization {
         'artist' => FolderOrganization.artist,
         'album' => FolderOrganization.album,
         'artist_album' => FolderOrganization.artistAlbum,
+        'playlist' => FolderOrganization.playlist,
         _ => FolderOrganization.artistAlbum,
       };
 }
@@ -52,6 +57,7 @@ class FolderRules {
     this.usePrimaryArtistOnly = false,
     this.filterContributingArtistsInAlbumArtist = false,
     this.separateSingles = false,
+    this.createPlaylistFolder = false,
     this.albumFolderStructure = 'artist_album',
     this.singleFilenameTemplate = '',
   });
@@ -60,6 +66,7 @@ class FolderRules {
   final bool usePrimaryArtistOnly;
   final bool filterContributingArtistsInAlbumArtist;
   final bool separateSingles;
+  final bool createPlaylistFolder;
   final String albumFolderStructure;
   final String singleFilenameTemplate;
 
@@ -113,7 +120,7 @@ final _whitespaceRun = RegExp(r'\s+');
 
 /// Cleans one path segment. Unlike the engine's `sanitizeFilename` this runs per
 /// segment, so `/` between segments is preserved by the caller.
-String sanitizeFolderSegment(String name) {
+String sanitizeFolderSegment(String name, {String fallback = 'Unknown'}) {
   final withoutControl = name.runes
       .where((r) => r >= 0x20 && r != 0x7f)
       .map(String.fromCharCode);
@@ -127,8 +134,12 @@ String sanitizeFolderSegment(String name) {
   out = out
       .replaceAll(RegExp(r'^[.\s]+'), '')
       .replaceAll(RegExp(r'[.\s]+$'), '');
-  return out.isEmpty ? 'Unknown' : out;
+  return out.isEmpty ? fallback : out;
 }
+
+/// A visible playlist segment; never allow traversal or separators.
+String sanitizePlaylistFolder(String name) => sanitizeFolderSegment(
+  name.replaceAll(RegExp(r'\.{2,}'), '.'), fallback: 'Playlist');
 
 /// Strips featured artists so "A feat. B" and "A" land in the same folder.
 final _featuredArtist = RegExp(
@@ -142,7 +153,17 @@ String buildRelativeFolder(
   FolderOrganization mode,
   FolderMetadata track, {
   FolderRules rules = const FolderRules(),
+  String? playlistName,
 }) {
+  final playlist = playlistName == null ? '' : sanitizePlaylistFolder(playlistName);
+  if (mode == FolderOrganization.playlist) return playlist;
+  final normal = _buildNormalRelativeFolder(mode, track, rules: rules);
+  return rules.createPlaylistFolder && playlist.isNotEmpty
+      ? [playlist, if (normal.isNotEmpty) normal].join('/') : normal;
+}
+
+String _buildNormalRelativeFolder(FolderOrganization mode, FolderMetadata track,
+    {required FolderRules rules}) {
   if (!rules.separateSingles && mode == FolderOrganization.none) return '';
 
   final albumArtist = track.albumArtist;
@@ -191,7 +212,7 @@ String buildRelativeFolder(
     FolderOrganization.artist => [artist],
     FolderOrganization.album => [album],
     FolderOrganization.artistAlbum => [artist, album],
-    FolderOrganization.none => const <String?>[],
+    FolderOrganization.none || FolderOrganization.playlist => const <String?>[],
   };
 
   return segments.whereType<String>().join('/');

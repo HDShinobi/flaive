@@ -68,6 +68,11 @@ class DownloadFileSettingsScreen extends ConsumerWidget {
                 .set,
           ),
           SwitchListTile(
+            title: Text(t.createPlaylistFolderTitle),
+            value: rules.createPlaylistFolder,
+            onChanged: ref.read(createPlaylistFolderProvider.notifier).set,
+          ),
+          SwitchListTile(
             title: Text(t.separateSinglesTitle),
             value: rules.separateSingles,
             onChanged: ref.read(separateSinglesProvider.notifier).set,
@@ -288,6 +293,7 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
             filterContributingArtistsInAlbumArtist:
                 savedRules.filterContributingArtistsInAlbumArtist,
             separateSingles: savedRules.separateSingles,
+            createPlaylistFolder: savedRules.createPlaylistFolder,
             albumFolderStructure: savedRules.albumFolderStructure,
             singleFilenameTemplate: _default ? '' : _text.text,
           )

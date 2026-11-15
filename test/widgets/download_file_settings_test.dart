@@ -31,6 +31,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Use album artist for folders'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Single filename template'), 200);
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'Single filename template'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Single filename template'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '{title} - {artist}');
