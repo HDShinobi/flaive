@@ -5,6 +5,7 @@ import android.util.Log
 import org.json.JSONObject
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Locale
 
 /** Native-worker only: Dart-fallback items (gate-rejected or stalled) are not converted. */
@@ -71,14 +72,19 @@ object AutoConvert {
     fun run(ctx: Context, path: String, requestJson: String, probe: (String) -> String,
             ffmpeg: (List<String>) -> Boolean): String = run(path, requestJson, probe, ffmpeg,
         embed = { NonFlacMetadataEmbedder.embed(ctx, it, requestJson) },
-        warning = { Log.w("AutoConvert", "auto_conversion_warning: $it") })
+        warning = { Log.w("AutoConvert", "auto_conversion_warning: $it") },
+        error = { Log.e("AutoConvert", "auto_conversion_warning: $it") })
 
     /** File transaction and policy are injectable; JVM tests never call Android APIs. */
     internal fun run(path: String, requestJson: String, probe: (String) -> String,
                      ffmpeg: (List<String>) -> Boolean, embed: (String) -> Unit = {},
                      warning: (String) -> Unit = {},
-                     mover: (File, File, Boolean) -> Unit = NonFlacMetadataEmbedder::moveOutput): String {
+                     mover: (File, File, Boolean) -> Unit = { from, to, atomic ->
+                         if (atomic) Files.move(from.toPath(), to.toPath(), StandardCopyOption.ATOMIC_MOVE)
+                         else Files.move(from.toPath(), to.toPath())
+                     }, error: (String) -> Unit = warning): String {
         var staged: File? = null
+        var cleanupStaging = true
         try {
             val t = target(requestJson) ?: return path
             if (JSONObject(requestJson).optBoolean("already_exists", false)) return path
@@ -110,17 +116,51 @@ object AutoConvert {
             check(staging.isFile && staging.length() > 0) { "Converted output missing or empty" }
             if (t.format != "flac") embed(staging.path)
             check(staging.isFile && staging.length() > 0) { "Tagged output missing or empty" }
-            // Reuse the Android 9 sdcardfs atomic/regular rename and copy fallback.
-            // Never delete the source before replacement is in place.
-            if (samePath) NonFlacMetadataEmbedder.replaceOutput(staging, output, mover)
-            else Files.move(staging.toPath(), output.toPath())
+            if (samePath) {
+                val originalLength = source.length()
+                cleanupStaging = false
+                try {
+                    mover(staging, source, true)
+                    cleanupStaging = true
+                } catch (atomicFailure: Exception) {
+                    // Only fall back when the failed atomic attempt left the original intact.
+                    if (!source.isFile || source.length() != originalLength) {
+                        error("Atomic promotion changed source; preserving $path and ${staging.path}: ${atomicFailure.message}")
+                        return if (staging.isFile && staging.length() > 0) staging.path else path
+                    }
+                    cleanupStaging = true
+                    var backup = File(source.parentFile, "${source.nameWithoutExtension}.original.$ext")
+                    var suffix = 1
+                    while (backup.exists()) {
+                        backup = File(source.parentFile, "${source.nameWithoutExtension}.original.${suffix++}.$ext")
+                    }
+                    // shortcut: a crash between renames leaves complete <name>.original.<ext> and converted staging/at-path files; no startup sweep yet.
+                    mover(source, backup, false)
+                    cleanupStaging = false
+                    try {
+                        mover(staging, source, false)
+                    } catch (promotionFailure: Exception) {
+                        try {
+                            mover(backup, source, false)
+                            cleanupStaging = true
+                        } catch (restoreFailure: Exception) {
+                            error("Promotion and restore failed; preserving ${backup.path} and ${staging.path}: " +
+                                "${promotionFailure.message}; ${restoreFailure.message}")
+                            return backup.path
+                        }
+                        throw promotionFailure
+                    }
+                    cleanupStaging = true
+                    if (!backup.delete()) warning("Converted output adopted; original backup retained at ${backup.path}")
+                }
+            } else Files.move(staging.toPath(), output.toPath())
             if (!samePath && !source.delete()) warning("Converted output adopted; source could not be deleted")
             return output.path
         } catch (e: Exception) {
             warning(e.message ?: e.javaClass.simpleName)
             return path
         } finally {
-            staged?.delete()
+            if (cleanupStaging) staged?.delete()
         }
     }
 }

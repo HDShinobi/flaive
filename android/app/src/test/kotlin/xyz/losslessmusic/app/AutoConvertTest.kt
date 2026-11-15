@@ -5,9 +5,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 class AutoConvertTest {
     @get:Rule val temp = TemporaryFolder()
@@ -112,27 +112,59 @@ class AutoConvertTest {
             })
         assertEquals(src.path, path); assertEquals("capped", src.readText())
     }
-    @Test fun `same-path promotion falls back when atomic move is unsupported`() {
+    private fun swap(failPromotion: Boolean = false, failRestore: Boolean = false,
+                     failBackup: Boolean = false, atomicIOException: Boolean = false,
+                     existingBackup: Boolean = false) {
         val src = temp.newFile("song.flac").apply { writeText("original") }
-        val attempts = mutableListOf<Boolean>()
+        val staging = File(temp.root, "song.converting.flac")
+        val backup = File(temp.root, "song.original.flac")
+        if (existingBackup) backup.writeText("older original")
+        val moves = mutableListOf<Pair<String, String>>()
         val warnings = mutableListOf<String>()
         val path = AutoConvert.run(src.path, """{"auto_convert_downloads":true}""",
             { """{"codec":"flac","bit_depth":24,"sample_rate":96000}""" },
             { a -> File(a[a.indexOf("-y") - 1]).writeText("capped"); true },
             warning = { warnings.add(it) },
             mover = { from, to, atomic ->
-                attempts.add(atomic)
-                assertEquals("original", src.readText())
-                assertEquals("capped", from.readText())
-                if (atomic) throw AtomicMoveNotSupportedException(from.path, to.path, "sdcardfs")
-                Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                if (atomic) {
+                    assertEquals("original", src.readText())
+                    if (atomicIOException) throw IOException("atomic failure with source untouched")
+                    throw AtomicMoveNotSupportedException(from.path, to.path, "sdcardfs")
+                }
+                moves.add(from.name to to.name)
+                // Real no-replace move: failures never unlink the destination or copy bytes.
+                assertFalse("Swap rename must target a free path", to.exists())
+                assertTrue(from.readText() in listOf("original", "capped"))
+                if (from == src && failBackup || from == staging && failPromotion ||
+                    from != src && from != staging && failRestore) throw IOException("injected rename failure")
+                Files.move(from.toPath(), to.toPath())
             })
-        assertEquals(listOf(true, false), attempts)
-        assertEquals(src.path, path)
-        assertEquals("capped", src.readText())
-        assertTrue(warnings.isEmpty())
-        assertFalse(File(temp.root, "song.converting.flac").exists())
+        if (failPromotion && failRestore) {
+            assertEquals(backup.path, path)
+            assertEquals("original", File(path).readText())
+            assertEquals("capped", staging.readText())
+            assertFalse(src.exists()) // Complete backup is returned; visible path cannot be restored.
+            assertTrue(warnings.any { it.contains(backup.path) && it.contains(staging.path) })
+        } else {
+            assertEquals(src.path, path)
+            assertEquals(if (failPromotion || failBackup) "original" else "capped", src.readText())
+            assertFalse(staging.exists())
+            if (existingBackup) assertEquals("older original", backup.readText())
+            else assertFalse(backup.exists())
+            assertEquals(if (failBackup) 1 else if (failPromotion) 3 else 2, moves.size)
+            if (!failPromotion && !failBackup) assertTrue(warnings.isEmpty())
+            else assertTrue(warnings.isNotEmpty())
+            assertEquals(if (existingBackup) 2 else 1, temp.root.listFiles()!!.size)
+        }
     }
+    @Test fun `atomic unsupported swaps through backup then removes backup`() { swap() }
+    @Test fun `failed second rename restores complete original and removes staging`() { swap(failPromotion = true) }
+    @Test fun `failed restore retains both complete files and returns backup`() {
+        swap(failPromotion = true, failRestore = true)
+    }
+    @Test fun `failed backup rename leaves complete original at source`() { swap(failBackup = true) }
+    @Test fun `untouched source after atomic IOException can use rename swap`() { swap(atomicIOException = true) }
+    @Test fun `existing backup is preserved while swap uses a free sibling`() { swap(existingBackup = true) }
     @Test fun `failed rename preserves source and colliding destination`() {
         val src = temp.newFile("song.flac").apply { writeText("original") }
         val dst = File(temp.root, "song.mp3")
