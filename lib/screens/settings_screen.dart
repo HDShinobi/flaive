@@ -1,3 +1,4 @@
+import 'auto_convert_settings_screen.dart';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -290,6 +291,14 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(t.downloadRedownloadFakeHiResSubtitle),
             value: ref.watch(redownloadFakeHiResProvider),
             onChanged: ref.read(redownloadFakeHiResProvider.notifier).set,
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.transform),
+            title: Text(t.downloadAutoConvert),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const AutoConvertSettingsScreen())),
           ),
 
           // Ask before download

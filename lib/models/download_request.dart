@@ -13,6 +13,9 @@ class DownloadRequest {
   /// Set when the picked quality is FLAC and the source is known to deliver it
   /// wrapped in MP4 (see InstalledExtension.requiresContainerConversion).
   final bool requiresContainerConversion;
+  final bool autoConvertDownloads;
+  final String autoConvertFormat, autoConvertBitrate;
+  final int autoConvertMaxBitDepth, autoConvertMaxSampleRate;
 
   // SpotiFLAC metadata fields for embedding into audio file tags.
   final String? genre;
@@ -47,6 +50,11 @@ class DownloadRequest {
     this.embedLyrics = true,
     this.writeLrcSidecar = false,
     this.redownloadFakeHiRes = false,
+    this.autoConvertDownloads = false,
+    this.autoConvertFormat = 'flac',
+    this.autoConvertBitrate = '320k',
+    this.autoConvertMaxBitDepth = 16,
+    this.autoConvertMaxSampleRate = 48000,
     this.requiresContainerConversion = false,
     this.genre,
     this.label,
@@ -107,6 +115,11 @@ class DownloadRequest {
         'embed_lyrics': embedLyrics,
         'write_lrc_sidecar': writeLrcSidecar,
         'redownload_fake_hires': redownloadFakeHiRes,
+        'auto_convert_downloads': autoConvertDownloads,
+        'auto_convert_format': autoConvertFormat,
+        'auto_convert_bitrate': autoConvertBitrate,
+        'auto_convert_max_bit_depth': autoConvertMaxBitDepth,
+        'auto_convert_max_sample_rate': autoConvertMaxSampleRate,
         'artist_tag_mode': artistTagMode,
         if (!metadataSeparators.isDefault)
           'metadata_separators': metadataSeparators.toJson(),

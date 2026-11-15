@@ -1202,4 +1202,26 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get queueReplacedFakeHiRes =>
       'Đã thay bản Hi-Res giả bằng chất lượng CD';
+
+  @override
+  String get downloadAutoConvert => 'Tự chuyển đổi sau khi tải';
+
+  @override
+  String get downloadAutoConvertSubtitle =>
+      'Chuyển đổi nhạc lossless sau khi kiểm tra. Giới hạn chỉ giảm độ phân giải.';
+
+  @override
+  String get downloadAutoConvertFormat => 'Định dạng đầu ra';
+
+  @override
+  String get downloadAutoConvertMaxBitDepth => 'Độ sâu bit tối đa';
+
+  @override
+  String get downloadAutoConvertMaxSampleRate => 'Tần số lấy mẫu tối đa';
+
+  @override
+  String get downloadAutoConvertKeepOriginal => 'Giữ nguyên';
+
+  @override
+  String get downloadAutoConvertBitrate => 'Tốc độ bit';
 }

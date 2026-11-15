@@ -244,3 +244,47 @@ class SimultaneousDownloadsNotifier extends Notifier<int> {
 
 final simultaneousDownloadsProvider =
     NotifierProvider<SimultaneousDownloadsNotifier, int>(SimultaneousDownloadsNotifier.new);
+
+final autoConvertDownloadsProvider = NotifierProvider<_BoolPrefNotifier, bool>(
+  () => _BoolPrefNotifier('auto_convert_downloads', false));
+final autoConvertFormatProvider = NotifierProvider<_StringPrefNotifier, String>(
+  () => _StringPrefNotifier('auto_convert_format', 'flac',
+    const ['mp3', 'aac', 'opus', 'flac', 'alac'].contains));
+final autoConvertBitrateProvider = NotifierProvider<_StringPrefNotifier, String>(
+  () => _StringPrefNotifier('auto_convert_bitrate', '320k',
+    const ['128k', '160k', '192k', '256k', '320k'].contains));
+
+class _IntPrefNotifier extends Notifier<int> {
+  _IntPrefNotifier(this.key, this.defaultValue, this.values);
+  final String key;
+  final int defaultValue;
+  final List<int> values;
+  bool _explicitlySet = false;
+  late Future<void> ready;
+
+  @override
+  int build() {
+    _explicitlySet = false;
+    ready = Future.microtask(() async {
+      final p = await SharedPreferences.getInstance();
+      final value = p.getInt(key) ?? defaultValue;
+      if (ref.mounted && !_explicitlySet) {
+        state = values.contains(value) ? value : defaultValue;
+      }
+    });
+    return defaultValue;
+  }
+
+  Future<void> set(int value) async {
+    if (!values.contains(value)) return;
+    _explicitlySet = true;
+    state = value;
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(key, value);
+  }
+}
+
+final autoConvertMaxBitDepthProvider = NotifierProvider<_IntPrefNotifier, int>(
+  () => _IntPrefNotifier('auto_convert_max_bit_depth', 16, [16, 24, 0]));
+final autoConvertMaxSampleRateProvider = NotifierProvider<_IntPrefNotifier, int>(
+  () => _IntPrefNotifier('auto_convert_max_sample_rate', 48000, [44100, 48000, 96000, 192000, 0]));

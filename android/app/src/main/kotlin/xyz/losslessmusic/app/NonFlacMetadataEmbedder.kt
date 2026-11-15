@@ -187,13 +187,18 @@ object NonFlacMetadataEmbedder {
         }
     }
 
-    private fun runAndReplace(args: List<String>, tempOutput: String, originalPath: String) {
-        val session = FFmpegKit.executeWithArguments(args.toTypedArray())
+    internal fun runAndReplace(args: List<String>, tempOutput: String, originalPath: String,
+                               ffmpeg: (List<String>) -> Boolean = {
+                                   ReturnCode.isSuccess(FFmpegKit.executeWithArguments(it.toTypedArray()).returnCode)
+                               }) {
         val temp = File(tempOutput)
-        if (ReturnCode.isSuccess(session.returnCode) && temp.exists()) {
+        try {
+            if (!ffmpeg(args) || !temp.isFile || temp.length() == 0L) {
+                throw IOException("Metadata FFmpeg failed or produced empty output")
+            }
             replaceOutput(temp, File(originalPath))
-        } else {
-            if (temp.exists()) temp.delete()
+        } finally {
+            temp.delete()
         }
     }
 

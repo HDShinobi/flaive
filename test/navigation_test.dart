@@ -77,6 +77,7 @@ void main() {
         matching: find.byType(Scrollable),
       ),
     );
+    await t.pumpAndSettle();
     await t.tap(find.text('Nhật ký'));
     await t.pumpAndSettle();
     expect(find.byType(LogScreen), findsOneWidget);

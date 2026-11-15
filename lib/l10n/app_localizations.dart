@@ -2293,6 +2293,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replaced fake Hi-Res with CD quality'**
   String get queueReplacedFakeHiRes;
+
+  /// No description provided for @downloadAutoConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-convert downloads'**
+  String get downloadAutoConvert;
+
+  /// No description provided for @downloadAutoConvertSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert lossless downloads after verification. Caps only reduce resolution.'**
+  String get downloadAutoConvertSubtitle;
+
+  /// No description provided for @downloadAutoConvertFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Output format'**
+  String get downloadAutoConvertFormat;
+
+  /// No description provided for @downloadAutoConvertMaxBitDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum bit depth'**
+  String get downloadAutoConvertMaxBitDepth;
+
+  /// No description provided for @downloadAutoConvertMaxSampleRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum sample rate'**
+  String get downloadAutoConvertMaxSampleRate;
+
+  /// No description provided for @downloadAutoConvertKeepOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep original'**
+  String get downloadAutoConvertKeepOriginal;
+
+  /// No description provided for @downloadAutoConvertBitrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitrate'**
+  String get downloadAutoConvertBitrate;
 }
 
 class _AppLocalizationsDelegate

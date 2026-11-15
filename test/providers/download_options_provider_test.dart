@@ -4,6 +4,39 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lossless_music_download/providers/download_options_provider.dart';
 
 void main() {
+  test('auto conversion prefs persist all options before payload construction', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    expect(c.read(autoConvertDownloadsProvider), false);
+    expect(c.read(autoConvertFormatProvider), 'flac');
+    expect(c.read(autoConvertBitrateProvider), '320k');
+    expect(c.read(autoConvertMaxBitDepthProvider), 16);
+    expect(c.read(autoConvertMaxSampleRateProvider), 48000);
+    await c.read(autoConvertDownloadsProvider.notifier).set(true);
+    await c.read(autoConvertFormatProvider.notifier).set('alac');
+    await c.read(autoConvertBitrateProvider.notifier).set('192k');
+    await c.read(autoConvertMaxBitDepthProvider.notifier).set(24);
+    await c.read(autoConvertMaxSampleRateProvider.notifier).set(0);
+    c.dispose();
+    final restored = ProviderContainer();
+    addTearDown(restored.dispose);
+    await Future.wait([
+      restored.read(autoConvertDownloadsProvider.notifier).ready,
+      restored.read(autoConvertFormatProvider.notifier).ready,
+      restored.read(autoConvertBitrateProvider.notifier).ready,
+      restored.read(autoConvertMaxBitDepthProvider.notifier).ready,
+      restored.read(autoConvertMaxSampleRateProvider.notifier).ready,
+    ]);
+    expect(restored.read(autoConvertDownloadsProvider), true);
+    expect(restored.read(autoConvertFormatProvider), 'alac');
+    expect(restored.read(autoConvertBitrateProvider), '192k');
+    expect(restored.read(autoConvertMaxBitDepthProvider), 24);
+    expect(restored.read(autoConvertMaxSampleRateProvider), 0);
+    await restored.read(autoConvertFormatProvider.notifier).set('bad');
+    await restored.read(autoConvertMaxSampleRateProvider.notifier).set(123);
+    expect(restored.read(autoConvertFormatProvider), 'alac');
+    expect(restored.read(autoConvertMaxSampleRateProvider), 0);
+  });
   test('fake hi-res preference defaults off and persists opt in', () async {
     SharedPreferences.setMockInitialValues({});
     final c = ProviderContainer();

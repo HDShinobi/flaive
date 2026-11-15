@@ -1208,4 +1208,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queueReplacedFakeHiRes => 'Replaced fake Hi-Res with CD quality';
+
+  @override
+  String get downloadAutoConvert => 'Auto-convert downloads';
+
+  @override
+  String get downloadAutoConvertSubtitle =>
+      'Convert lossless downloads after verification. Caps only reduce resolution.';
+
+  @override
+  String get downloadAutoConvertFormat => 'Output format';
+
+  @override
+  String get downloadAutoConvertMaxBitDepth => 'Maximum bit depth';
+
+  @override
+  String get downloadAutoConvertMaxSampleRate => 'Maximum sample rate';
+
+  @override
+  String get downloadAutoConvertKeepOriginal => 'Keep original';
+
+  @override
+  String get downloadAutoConvertBitrate => 'Bitrate';
 }

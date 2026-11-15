@@ -445,16 +445,23 @@ class DownloadForegroundService : Service() {
                 }
             } else FakeHiResGuard.Result(finalizedPath, false)
             replacedFakeHiRes = guarded.replaced
-            if (guarded.replaced && guarded.path != finalizedPath) {
+            val convertedPath = AutoConvert.run(applicationContext, guarded.path, request.requestJson,
+                probe = { Engines.current.getAudioQuality(it) },
+                ffmpeg = { args ->
+                    com.zarz.mornye.NativeDownloadFinalizer.runFFmpegArguments(args.toTypedArray(),
+                        shouldCancel = { workerStopped || !itemContext.isActive }).first &&
+                        !workerStopped && itemContext.isActive
+                })
+            if (convertedPath != finalizedPath) {
                 try {
                     val isrc = payload.optString("isrc", "")
                     if (isrc.isNotEmpty()) Engines.current.reindexIsrc(
-                        payload.optString("output_dir", ""), isrc, guarded.path)
+                        payload.optString("output_dir", ""), isrc, convertedPath)
                 } catch (e: Exception) {
                     android.util.Log.w("DownloadForegroundService", "Replacement ISRC reindex failed", e)
                 }
             }
-            guarded.path
+            convertedPath
         }
 
         currentCoroutineContext().ensureActive()

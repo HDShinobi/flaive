@@ -315,6 +315,11 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         ref.read(autoFallbackProvider.notifier).ready,
         ref.read(writeLrcSidecarProvider.notifier).ready,
         ref.read(redownloadFakeHiResProvider.notifier).ready,
+        ref.read(autoConvertDownloadsProvider.notifier).ready,
+        ref.read(autoConvertFormatProvider.notifier).ready,
+        ref.read(autoConvertBitrateProvider.notifier).ready,
+        ref.read(autoConvertMaxBitDepthProvider.notifier).ready,
+        ref.read(autoConvertMaxSampleRateProvider.notifier).ready,
         ref.read(simultaneousDownloadsProvider.notifier).ready,
         ref.read(wifiOnlyProvider.notifier).ready,
       ]);
@@ -522,6 +527,11 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       metadataSeparators: ref.read(metadataSeparatorsProvider),
       writeLrcSidecar: ref.read(writeLrcSidecarProvider),
       redownloadFakeHiRes: ref.read(redownloadFakeHiResProvider),
+      autoConvertDownloads: ref.read(autoConvertDownloadsProvider),
+      autoConvertFormat: ref.read(autoConvertFormatProvider),
+      autoConvertBitrate: ref.read(autoConvertBitrateProvider),
+      autoConvertMaxBitDepth: ref.read(autoConvertMaxBitDepthProvider),
+      autoConvertMaxSampleRate: ref.read(autoConvertMaxSampleRateProvider),
     );
     final provider = (ref.read(extensionsProvider).value ?? const <InstalledExtension>[])
         .where((e) => e.id == resolvedService).firstOrNull;

@@ -4,6 +4,24 @@ import 'package:lossless_music_download/models/metadata_separators.dart';
 
 void main() {
   group('DownloadRequest.toJson', () {
+    test('auto conversion payload defaults to disabled FLAC 16-48', () {
+      final j = const DownloadRequest(trackName: 'S', artistName: 'A', outputDir: '/dl').toJson();
+      expect(j['auto_convert_downloads'], false);
+      expect(j['auto_convert_format'], 'flac');
+      expect(j['auto_convert_bitrate'], '320k');
+      expect(j['auto_convert_max_bit_depth'], 16);
+      expect(j['auto_convert_max_sample_rate'], 48000);
+    });
+    test('auto conversion payload preserves selected options', () {
+      final j = const DownloadRequest(trackName: 'S', artistName: 'A', outputDir: '/dl',
+        autoConvertDownloads: true, autoConvertFormat: 'alac', autoConvertBitrate: '192k',
+        autoConvertMaxBitDepth: 24, autoConvertMaxSampleRate: 0).toJson();
+      expect(j['auto_convert_downloads'], true);
+      expect(j['auto_convert_format'], 'alac');
+      expect(j['auto_convert_bitrate'], '192k');
+      expect(j['auto_convert_max_bit_depth'], 24);
+      expect(j['auto_convert_max_sample_rate'], 0);
+    });
     test('fake hi-res redownload defaults off and serializes opt in', () {
       expect(const DownloadRequest(trackName: 'S', artistName: 'A',
         outputDir: '/dl').toJson()['redownload_fake_hires'], false);
