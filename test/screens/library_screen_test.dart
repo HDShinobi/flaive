@@ -127,6 +127,23 @@ void main() {
     expect(find.text('Invalid header'), findsOneWidget);
   });
 
+  testWidgets('title mode keeps albums in first track appearance order', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(buildLibraryScreen([
+      libraryProvider.overrideWith((_) async => [
+        const LibraryEntry(path: '/a.flac', name: 'a.flac', title: 'A track',
+          albumName: 'Z album', format: 'FLAC', verified: true, sizeBytes: 0),
+        const LibraryEntry(path: '/b.flac', name: 'b.flac', title: 'B track',
+          albumName: 'A album', format: 'FLAC', verified: true, sizeBytes: 0),
+      ]),
+    ]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Albums'));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.text('Z album')).dx,
+      lessThan(tester.getTopLeft(find.text('A album')).dx));
+  });
+
   testWidgets('sort sizeDesc orders albums by summed size', (tester) async {
     SharedPreferences.setMockInitialValues({'library_sort': 'sizeDesc'});
     await tester.pumpWidget(

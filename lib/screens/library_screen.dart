@@ -3,6 +3,7 @@ import 'dart:async';
 
 import '../providers/batch_re_enrich_provider.dart';
 import '../providers/library_busy_provider.dart';
+import '../providers/download_options_provider.dart';
 import '../widgets/batch_re_enrich_panel.dart';
 
 import 'download_history_screen.dart';
@@ -64,7 +65,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final t = AppLocalizations.of(context);
     final asyncEntries = ref.watch(sortedLibraryProvider);
     final failures = ref.watch(libraryStateProvider).scanFailures;
-    final sort = ref.watch(librarySortProvider).value ?? LibrarySort.title;
+    final sort = ref.watch(librarySortProvider);
     final libraryBusy = ref.watch(libraryBusyProvider);
 
     return Scaffold(
@@ -84,8 +85,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             icon: const Icon(Icons.sort),
             tooltip: t.librarySort,
             initialValue: sort,
-            onSelected: (value) =>
-                ref.read(librarySortProvider.notifier).setSort(value),
+            onSelected: (value) => ref
+                .read(librarySortPreferenceProvider.notifier)
+                .set(value.name),
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: LibrarySort.title,
@@ -356,22 +358,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       return const Center(child: SizedBox.shrink());
     }
 
-    final sort = ref.watch(librarySortProvider).value ?? LibrarySort.title;
-    final sizes = sort == LibrarySort.title ? <(String, String), int>{} : {
-      for (final album in grouped.entries)
-        album.key: album.value.fold<int>(0, (sum, e) => sum + e.sizeBytes),
-    };
-    final albums = grouped.entries.toList()
-      ..sort((a, b) {
-        if (sort != LibrarySort.title) {
-          final bySize = sizes[a.key]!.compareTo(sizes[b.key]!);
-          if (bySize != 0) {
-            return sort == LibrarySort.sizeDesc ? -bySize : bySize;
-          }
+    final sort = ref.watch(librarySortProvider);
+    final sizes = sort == LibrarySort.title
+        ? <(String, String), int>{}
+        : {
+            for (final album in grouped.entries)
+              album.key: album.value.fold<int>(
+                0,
+                (sum, e) => sum + e.sizeBytes,
+              ),
+          };
+    final albums = grouped.entries.toList();
+    if (sort != LibrarySort.title) {
+      albums.sort((a, b) {
+        final bySize = sizes[a.key]!.compareTo(sizes[b.key]!);
+        if (bySize != 0) {
+          return sort == LibrarySort.sizeDesc ? -bySize : bySize;
         }
         final byTitle = a.key.$2.compareTo(b.key.$2);
         return byTitle != 0 ? byTitle : a.key.$1.compareTo(b.key.$1);
       });
+    }
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),

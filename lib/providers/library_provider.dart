@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/library_scan_failure.dart';
 
 import '../models/library_entry.dart';
@@ -13,6 +12,7 @@ import '../services/reenrich_orphans.dart';
 import '../services/library_reorganizer.dart';
 import 'download_history_provider.dart';
 import 'download_dir_provider.dart';
+import 'download_options_provider.dart';
 import 'extensions_provider.dart';
 
 export '../models/library_entry.dart';
@@ -39,27 +39,9 @@ final libraryStateProvider =
       LibraryStateNotifier.new,
     );
 
-class LibrarySortNotifier extends AsyncNotifier<LibrarySort> {
-  @override
-  Future<LibrarySort> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('library_sort');
-    return LibrarySort.values.where((sort) => sort.name == saved).firstOrNull ??
-        LibrarySort.title;
-  }
-
-  Future<void> setSort(LibrarySort sort) async {
-    await future;
-    state = AsyncData(sort);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('library_sort', sort.name);
-  }
-}
-
-final librarySortProvider =
-    AsyncNotifierProvider<LibrarySortNotifier, LibrarySort>(
-      LibrarySortNotifier.new,
-    );
+final librarySortProvider = Provider<LibrarySort>(
+  (ref) => LibrarySort.values.byName(ref.watch(librarySortPreferenceProvider)),
+);
 
 // Watched only for size sorts. Keep the completed result until libraryProvider
 // emits a new scan, so switching size direction never repeats filesystem I/O.
@@ -91,7 +73,7 @@ final librarySizedEntriesProvider = FutureProvider<List<LibraryEntry>>((
 });
 
 final sortedLibraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
-  final sort = await ref.watch(librarySortProvider.future);
+  final sort = ref.watch(librarySortProvider);
   if (!ref.mounted) return [];
   final entries = await ref.watch(
     sort == LibrarySort.title
@@ -118,7 +100,6 @@ final libraryCoverCacheDirProvider = Provider<Future<String>>((_) async {
 final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
   final dir = await ref.watch(downloadDirProvider.future);
   if (!ref.mounted) return [];
-  ref.read(libraryStateProvider.notifier).setFailures([]);
   final d = Directory(dir);
   if (!d.existsSync()) return [];
 
@@ -140,7 +121,9 @@ final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
   if (!ref.mounted) return [];
   ref.read(libraryStateProvider.notifier).setFailures([
     for (final failure in failures)
-      LibraryScanFailure(path: failure.path, message: failure.message),
+      if (!failure.path.contains('/.fake-hires/') &&
+          !isReEnrichTemporary(failure.path))
+        LibraryScanFailure(path: failure.path, message: failure.message),
   ]);
   await cleanupReEnrichOrphans(
     dir,

@@ -168,6 +168,11 @@ class _StringPrefNotifier extends Notifier<String> {
   }
 }
 
+final librarySortPreferenceProvider = NotifierProvider<_StringPrefNotifier, String>(
+  () => _StringPrefNotifier('library_sort', 'title',
+    (value) => const ['title', 'sizeDesc', 'sizeAsc'].contains(value)),
+);
+
 final filenameTemplateProvider = NotifierProvider<_StringPrefNotifier, String>(
   () => _StringPrefNotifier('filename_template', '',
     (v) => v.isEmpty || DownloadTemplates.validate(v) == null));

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,7 +57,10 @@ class _FakeScanBridge extends BackendBridge {
 
 Widget buildLibraryScreen(List<dynamic> overrides) {
   return ProviderScope(
-    overrides: overrides.cast(),
+    overrides: [
+      librarySortProvider.overrideWith((_) => LibrarySort.title),
+      ...overrides.cast(),
+    ],
     child: const MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -69,7 +71,6 @@ Widget buildLibraryScreen(List<dynamic> overrides) {
 }
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
   group('LibraryScreen widget tests (hermetic)', () {
     testWidgets('shows entries and count header when library has files',
         (tester) async {
