@@ -512,7 +512,9 @@ impl ExtensionManifest {
                     .get(&setting.key)
                     .and_then(Value::as_str)
                     .filter(|value| !value.trim().is_empty())
-                    .or_else(|| setting.default.as_str())
+                    // LM-FORK(grant-user-value-only): an unset value grants nothing; a manifest
+                    // default would let an extension reach a host outside permissions.network.
+                    // END LM-FORK
                     .and_then(GrantedOrigin::parse)
             })
             .collect()
@@ -698,13 +700,9 @@ mod tests {
             {"key":"other","type":"string","label":"Other"}
         ]))
         .unwrap();
-        assert!(
-            manifest
-                .network_grants(&Map::new())
-                .iter()
-                .map(|g| g.host.as_str())
-                .eq(["mirror.example.test"])
-        );
+        // LM-FORK(grant-user-value-only): defaults grant nothing.
+        assert!(manifest.network_grants(&Map::new()).is_empty());
+        // END LM-FORK
 
         let settings = serde_json::json!({
             "endpoint":"http://192.168.1.20:8000/",
@@ -719,10 +717,8 @@ mod tests {
                     scheme: "http".into(),
                     host: "192.168.1.20".into()
                 },
-                GrantedOrigin {
-                    scheme: "https".into(),
-                    host: "mirror.example.test".into()
-                },
+                // LM-FORK(grant-user-value-only): a blank "mirror" no longer falls back to its default.
+                // END LM-FORK
             ]
         );
 
