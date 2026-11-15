@@ -144,27 +144,38 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('playlistName survives queue restore and retry with saved folder option', () async {
-    SharedPreferences.setMockInitialValues({'create_playlist_folder': true});
-    final bridge = _FakeBridge()..throwOnDownload = true;
-    final c = _makeContainer(bridge);
-    await c.read(downloadQueueProvider.notifier).enqueue(_track, playlistName: 'Mix');
-    await _pump();
-    expect(bridge.downloadCalls.single.outputDir, '/fake/downloads/Mix/Test Artist/Test Album');
-    final entry = c.read(downloadQueueProvider).single;
-    expect(entry.copyWith(status: 'failed').playlistName, 'Mix');
-    await _pump();
-    c.dispose();
-    final restored = _makeContainer(bridge);
-    restored.read(downloadQueueProvider);
-    await _pump();
-    expect(restored.read(downloadQueueProvider).single.playlistName, 'Mix');
-    restored.read(downloadQueueProvider.notifier).retry(entry.itemId);
-    await _pump();
-    expect(restored.read(downloadQueueProvider).single.playlistName, 'Mix');
-    expect(bridge.downloadCalls.last.outputDir, '/fake/downloads/Mix/Test Artist/Test Album');
-    restored.dispose();
-  });
+  for (final retryAll in [false, true]) {
+    test('playlistName survives ${retryAll ? "retry all failed" : "retry"} in entry and request', () async {
+      SharedPreferences.setMockInitialValues({'create_playlist_folder': true});
+      final bridge = _FakeBridge()..throwOnDownload = true;
+      final c = _makeContainer(bridge);
+      addTearDown(c.dispose);
+      final queue = c.read(downloadQueueProvider.notifier);
+      await queue.enqueue(_track, service: 'qobuz', quality: 'FLAC', playlistName: 'Mix');
+      await _pump();
+      final failed = c.read(downloadQueueProvider).single;
+      expect(failed.status, 'failed');
+      await queue.pause();
+      if (retryAll) {
+        queue.retryAllFailed();
+      } else {
+        queue.retry(failed.itemId);
+      }
+      await _pump();
+      final retried = c.read(downloadQueueProvider).single;
+      expect(retried.itemId, isNot(failed.itemId));
+      expect(retried.status, 'queued');
+      expect(retried.playlistName, 'Mix');
+      expect(retried.service, 'qobuz');
+      expect(retried.quality, 'FLAC');
+      bridge.throwOnDownload = false;
+      await queue.resume();
+      await _pump();
+      expect(c.read(downloadQueueProvider).single.playlistName, 'Mix');
+      expect(bridge.downloadCalls, hasLength(2));
+      expect(bridge.downloadCalls.last.outputDir, '/fake/downloads/Mix/Test Artist/Test Album');
+    });
+  }
   test('cold start uses saved templates and tags in the first request', () async {
     SharedPreferences.setMockInitialValues({
       'filename_template': '{title} - {artist}',

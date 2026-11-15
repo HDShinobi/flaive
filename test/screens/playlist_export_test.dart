@@ -211,6 +211,41 @@ void main() {
     );
   }
 
+  testWidgets('export refresh with no files reports none found and writes nothing', (tester) async {
+    final root = Directory.systemTemp.createTempSync('playlist_empty_refresh_');
+    SharedPreferences.setMockInitialValues({});
+    final batch = HistoryLookupBatch(_tracks);
+    var refreshEmpty = false;
+    final c = ProviderContainer(overrides: [
+      backendBridgeProvider.overrideWithValue(_Bridge()),
+      downloadDirPathProvider.overrideWithValue(Future.value(root.path)),
+      downloadedTracksProvider(batch).overrideWith((ref) async => {}),
+      playlistExportEntriesProvider(batch).overrideWith((ref) async => refreshEmpty ? [] : [
+        (path: '${root.path}/Second.flac', artist: 'A', title: 'Second', durationSec: 2),
+      ]),
+    ]);
+    try {
+      await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('en'),
+        home: AlbumScreen(args: AlbumRouteArgs(id: 'qobuz:p', name: 'Route Mix', artist: 'A', resourceType: 'playlist')),
+      )));
+      await tester.pumpAndSettle();
+      expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Export M3U8')).onPressed, isNotNull);
+      refreshEmpty = true;
+      await tester.tap(find.text('Export M3U8'));
+      await tester.pumpAndSettle();
+      expect(find.text('No tracks found'), findsOneWidget);
+      expect(find.text('Exported 0 of 3 tracks'), findsNothing);
+      expect(root.listSync(), isEmpty);
+    } finally {
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+      root.deleteSync(recursive: true);
+    }
+  });
+
   testWidgets(
     'empty export is disabled and download all threads the resolved playlist title',
     (tester) async {

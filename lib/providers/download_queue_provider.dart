@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/download_progress.dart';
@@ -93,57 +92,6 @@ class DownloadEntry {
     this.replacedFakeHiRes = false,
     this.bypassDuplicateCheck = false,
   });
-
-  Map<String, dynamic> toJson() => {
-    'track': {
-      'id': track.id,
-      'name': track.name,
-      'artists': track.artists,
-      'album_name': track.albumName,
-      'album_artist': track.albumArtist,
-      'cover_url': track.coverUrl,
-      'isrc': track.isrc,
-      'duration_ms': track.durationMs,
-      'preview_url': track.previewUrl,
-      'source': track.source,
-      'track_number': track.trackNumber,
-      'disc_number': track.discNumber,
-      'total_tracks': track.totalTracks,
-      'total_discs': track.totalDiscs,
-      'release_date': track.releaseDate,
-      'composer': track.composer,
-      'audio_quality': track.audioQuality,
-      'audio_modes': track.audioModes,
-      'artist_id': track.artistId,
-      'album_id': track.albumId,
-      'genre': track.genre,
-      'label': track.label,
-      'copyright': track.copyright,
-      'explicit': track.explicit,
-      'upc': track.upc,
-      'album_type': track.albumType,
-      'deezer_id': track.deezerId,
-      'playlist_position': track.playlistPosition,
-    },
-    'item_id': itemId, 'status': status, 'service': service, 'quality': quality,
-    'playlist_name': playlistName, 'file_path': filePath, 'error': error,
-    'resolved_service': resolvedService, 'verification_service': verificationService,
-    'already_in_library': alreadyInLibrary, 'replaced_fake_hires': replacedFakeHiRes,
-    'bypass_duplicate_check': bypassDuplicateCheck,
-  };
-
-  factory DownloadEntry.fromJson(Map<String, dynamic> json) => DownloadEntry(
-    track: Track.fromJson(json['track'] as Map<String, dynamic>),
-    itemId: json['item_id'] as String, status: json['status'] as String,
-    progress: json['status'] == 'done' ? 1 : 0, bytesReceived: 0,
-    service: json['service'] as String?, quality: json['quality'] as String?,
-    playlistName: json['playlist_name'] as String?, filePath: json['file_path'] as String?,
-    error: json['error'] as String?, resolvedService: json['resolved_service'] as String?,
-    verificationService: json['verification_service'] as String?,
-    alreadyInLibrary: json['already_in_library'] == true,
-    replacedFakeHiRes: json['replaced_fake_hires'] == true,
-    bypassDuplicateCheck: json['bypass_duplicate_check'] == true,
-  );
 
   DownloadEntry copyWith({
     String? status,
@@ -246,58 +194,6 @@ final canDownloadAnywayProvider = FutureProvider.autoDispose.family<bool, String
 });
 
 class DownloadQueueController extends Notifier<List<DownloadEntry>> {
-  static const _queueKey = 'download_queue';
-  Future<void> _saveTail = Future.value();
-  bool _restored = false;
-  String? _lastSnapshot;
-
-  void _saveQueue() {
-    if (!_restored) return;
-    final snapshot = jsonEncode(state.map((e) => e.toJson()).toList());
-    if (snapshot == _lastSnapshot) return;
-    _lastSnapshot = snapshot;
-    _saveTail = _saveTail.then((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_queueKey, snapshot);
-    }).catchError((Object e) {
-      debugPrint('[DownloadQueue] snapshot save failed: $e');
-    });
-  }
-
-  Future<void> _restoreQueue() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = jsonDecode(prefs.getString(_queueKey) ?? '[]') as List;
-      final restored = <DownloadEntry>[];
-      for (final value in raw) {
-        try {
-          var entry = DownloadEntry.fromJson(value as Map<String, dynamic>);
-          // A native worker may have been interrupted. Require explicit retry
-          // rather than automatically starting a second download of that file.
-          if (entry.status != 'done' && entry.status != 'failed') {
-            entry = entry.copyWith(status: 'failed');
-          }
-          restored.add(entry);
-        } catch (e) {
-          debugPrint('[DownloadQueue] invalid snapshot entry: $e');
-        }
-      }
-      if (!ref.mounted) return;
-      final currentIds = state.map((e) => e.itemId).toSet();
-      state = [...state, ...restored.where((e) => !currentIds.contains(e.itemId))];
-      for (final entry in restored) {
-        ref.read(downloadLabelsProvider.notifier).put(entry.itemId, entry.track);
-      }
-    } catch (e) {
-      debugPrint('[DownloadQueue] snapshot restore failed: $e');
-    } finally {
-      if (ref.mounted) {
-        _restored = true;
-        _saveQueue();
-      }
-    }
-  }
-
   final Map<String, Sample> _samples = {};
   final Map<String, Set<String>> _loggedLifecycleEvents = {};
 
@@ -356,8 +252,6 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
 
   @override
   List<DownloadEntry> build() {
-    listenSelf((_, _) => _saveQueue());
-    Future.microtask(_restoreQueue);
     final lifecycle = AppLifecycleListener(onResume: () {
       if (ref.mounted) unawaited(_processQueue());
     });

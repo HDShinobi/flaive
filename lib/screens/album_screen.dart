@@ -240,15 +240,17 @@ class AlbumScreen extends ConsumerWidget {
       ref.invalidate(playlistExportEntriesProvider(batch));
       final entries = await ref.read(playlistExportEntriesProvider(batch).future);
       if (!context.mounted) return;
+      if (entries.isEmpty) {
+        messenger.showSnackBar(SnackBar(content: Text(t.noTracksFound)));
+        return;
+      }
       final root = await ref.read(downloadDirProvider.future);
       if (!context.mounted) return;
       await ref.read(folderRulesReadyProvider.future);
       if (!context.mounted) return;
       final folders = ref.read(folderRulesProvider).createPlaylistFolder;
       final directory = folders ? '$root/${sanitizePlaylistFolder(data.name)}' : root;
-      if (entries.isNotEmpty) {
-        await M3uPlaylistService.write(playlistName: data.name, entries: entries, m3uDir: directory);
-      }
+      await M3uPlaylistService.write(playlistName: data.name, entries: entries, m3uDir: directory);
       if (!context.mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(t.playlistExportDone(entries.length, data.tracks.length))));
     } catch (error) {

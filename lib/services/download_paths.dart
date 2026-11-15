@@ -153,17 +153,7 @@ String buildRelativeFolder(
   FolderOrganization mode,
   FolderMetadata track, {
   FolderRules rules = const FolderRules(),
-  String? playlistName,
 }) {
-  final playlist = playlistName == null ? '' : sanitizePlaylistFolder(playlistName);
-  if (mode == FolderOrganization.playlist) return playlist;
-  final normal = _buildNormalRelativeFolder(mode, track, rules: rules);
-  return rules.createPlaylistFolder && playlist.isNotEmpty
-      ? [playlist, if (normal.isNotEmpty) normal].join('/') : normal;
-}
-
-String _buildNormalRelativeFolder(FolderOrganization mode, FolderMetadata track,
-    {required FolderRules rules}) {
   if (!rules.separateSingles && mode == FolderOrganization.none) return '';
 
   final albumArtist = track.albumArtist;

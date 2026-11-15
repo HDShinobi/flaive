@@ -33,8 +33,6 @@ void main() {
       albumFolderTemplate: '{album}',
       rules: const FolderRules(createPlaylistFolder: true, separateSingles: true));
     expect(target.dir, '/music/Mix');
-    expect(buildRelativeFolder(FolderOrganization.playlist,
-      const FolderMetadata(artist: 'Artist'), playlistName: 'Mix'), 'Mix');
   });
 
   test('separate singles uses every upstream folder tree including Albums', () {
