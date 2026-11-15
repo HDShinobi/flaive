@@ -24,6 +24,7 @@ interface NativeEngine {
     fun getInstalledExtensions(): String
     fun setExtensionEnabled(id: String, enabled: Boolean)
     fun removeExtension(id: String)
+    fun invokeExtensionAction(id: String, action: String): String
     fun getExtensionSettings(id: String): String
     fun setExtensionSettings(id: String, settingsJson: String)
     fun getExtensionPendingAuth(extensionId: String): String
@@ -50,10 +51,14 @@ interface NativeEngine {
     fun setDownloadDirectory(path: String)
     fun allowDownloadDir(path: String)
     fun checkDuplicate(outputDir: String, isrc: String): String
+    fun checkHiResAuthenticity(path: String, optionsJson: String): String
+    fun reindexIsrc(outputDir: String, isrc: String, path: String)
     fun getAudioQuality(path: String): String
     fun editFileMetadata(filePath: String, metadataJson: String): String
     fun reEnrichFile(requestJson: String): String
     fun getLyricsLRC(spotifyId: String, trackName: String, artistName: String, filePath: String, durationMs: Long): String
     fun setLibraryCoverCacheDir(cacheDir: String)
+    /** Failures retained by the engine after the latest completed scan (at most 100). */
+    fun getLibraryScanFailures(): String
     fun scanLibraryFolder(folderPath: String): String
 }

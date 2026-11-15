@@ -43,6 +43,20 @@ for match in re.finditer(r'^open class (\w+):(.*?)(?=^open class |^data class |\
         if result == owner:
             methods.setdefault(name, []).append((owner, f'fun {name}({args}): {result}'))
 
+# Top-level exports have no interface owner. Track imported functions actually
+# called by owned glue, alongside object methods.
+top_level = {}
+for fn in re.finditer(r'^[ \t]+(?:@Throws\([^\n]*?\) )?fun `(\w+)`\(([^\n]*)\): ([^\n{]+) \{', bindings, re.M):
+    name, args, result = fn.groups()
+    top_level[name] = f'fun {name}({args}): {result.strip()}'
+top_calls = set()
+for source in sources:
+    for name in re.findall(r'^import com\.mornye\.backend\.(\w+)\s*$', source, re.M):
+        if name[0].islower() and re.search(r'\b' + name + r'\s*\(', source):
+            if name not in top_level:
+                raise SystemExit(f'ERROR: missing top-level Kotlin binding signature for {name}')
+            top_calls.add(name)
+
 # Infer named binding receivers from types, constructors and binding return
 # values. Lambda receivers are conservative: consider returned binding types,
 # but never treat a call on an unrelated named object as an engine call.
@@ -87,7 +101,7 @@ while True:
                     receivers.setdefault(variable, set()).update(re.findall(r'\b[A-Z]\w*\b', signature.split('): ', 1)[-1]))
     if repr((sorted(owners), sorted((k, sorted(v)) for k, v in receivers.items()))) == previous:
         break
-selected = set()
+selected = {('top-level', name, top_level[name]) for name in top_calls}
 for receiver, name in calls:
     candidates = receivers.get(receiver, set()) | ({receiver} if receiver in owners else set())
     if receiver in lambda_names:
@@ -142,11 +156,15 @@ for owner, name, kotlin in sorted(selected):
                 if not re.search(pattern, text):
                     continue
                 preceding = [(n, t) for n, t in impls.get(path, {}).items() if n < number]
-                if not preceding:
-                    continue
-                impl = max(preceding)[1]
-                if not re.match(r'^impl ' + owner + r'\b', impl):
-                    continue
+                if owner == 'top-level':
+                    if not text.startswith('pub fn '):
+                        continue
+                else:
+                    if not preceding:
+                        continue
+                    impl = max(preceding)[1]
+                    if not re.match(r'^impl ' + owner + r'\b', impl):
+                        continue
                 chunk = '\n'.join(content.get(n, '') for n in range(number, number + context + 1))
                 signature = re.search(pattern + r'.*?\)\s*(?:->\s*[^{}]+)?\s*\{', chunk, re.S)
                 if signature:

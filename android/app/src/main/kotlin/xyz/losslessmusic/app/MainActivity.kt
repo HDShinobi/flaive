@@ -282,6 +282,15 @@ class MainActivity : FlutterActivity() {
             (call.argument<Int>("limit") ?: 20).toLong(),
             call.argument<Boolean>("includeExtensions") ?: true
         )
+        "checkHiResAuthenticity" -> true to Engines.current.checkHiResAuthenticity(
+            call.argument<String>("file_path")!!,
+            call.argument<String>("options_json") ?: "{}"
+        )
+        "invokeExtensionAction" -> true to Engines.current.invokeExtensionAction(
+            call.argument<String>("id")!!,
+            call.argument<String>("action")!!
+        )
+        "getLibraryScanFailures" -> true to Engines.current.getLibraryScanFailures()
         "downloadByStrategy" -> true to Engines.current.downloadByStrategy(call.argument<String>("requestJson")!!)
         "getAllProgress" -> true to Engines.current.getAllDownloadProgress()
         "cancelDownload" -> {

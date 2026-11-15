@@ -404,4 +404,38 @@ class BackendBridge {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
   }
+
+  /// Returns the engine's complete authenticity verdict without dropping fields.
+  Future<Map<String, dynamic>> checkHiResAuthenticity(
+    String path, {
+    Map<String, dynamic> options = const {},
+  }) async {
+    final raw = await _c.invokeMethod<String>('checkHiResAuthenticity', {
+      'file_path': path,
+      'options_json': jsonEncode(options),
+    });
+    return Map<String, dynamic>.from(jsonDecode(raw!));
+  }
+
+  Future<Map<String, dynamic>> invokeExtensionAction(
+    String id,
+    String action,
+  ) async {
+    final raw = await _c.invokeMethod<String>('invokeExtensionAction', {
+      'id': id,
+      'action': action,
+    });
+    return Map<String, dynamic>.from(jsonDecode(raw!));
+  }
+
+  Future<List<({String path, String message})>> getLibraryScanFailures() async {
+    final raw = await _c.invokeMethod<String>(
+      'getLibraryScanFailures',
+      <String, dynamic>{},
+    );
+    if (raw == null || raw.isEmpty) return [];
+    return (jsonDecode(raw) as List)
+        .map((e) => (path: e['path'] as String, message: e['message'] as String))
+        .toList();
+  }
 }

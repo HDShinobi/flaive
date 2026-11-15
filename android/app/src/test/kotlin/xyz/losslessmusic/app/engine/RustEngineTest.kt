@@ -44,6 +44,57 @@ class RustEngineTest {
         fail("expected ${T::class.simpleName}"); throw IllegalStateException()
     }
 
+    @Test fun `checkHiResAuthenticity forwards path and options`() {
+        init()
+        val options = "{\"max_seconds\":30}"
+        assertEquals("{\"verdict\":\"authentic\"}", engine.checkHiResAuthenticity("/music/song.flac", options))
+        assertEquals("hires:/music/song.flac:$options", fake.calls[fake.calls.size - 2])
+        assertEquals("grant:/music", fake.calls[fake.calls.size - 3])
+        assertEquals(0, fake.openLeases)
+    }
+
+    @Test fun `invokeExtensionAction forwards to invokeAction`() {
+        init()
+        fake.actionResult = "{\"success\":false,\"error\":\"denied\"}"
+        assertEquals(fake.actionResult, engine.invokeExtensionAction("provider", "login"))
+        assertEquals("invokeAction:provider:login", fake.calls.last())
+    }
+
+    @Test fun `getLibraryScanFailures returns failure list and preserves scan shape`() {
+        init()
+        assertEquals("[]", engine.scanLibraryFolder("/music"))
+        assertEquals("[{\"path\":\"/music/bad.flac\",\"message\":\"bad header\"}]", engine.getLibraryScanFailures())
+    }
+
+    @Test fun `getLibraryScanFailures is empty before a scan or without failures`() {
+        init()
+        fake.scanProgress = "{}"
+        assertEquals("[]", engine.getLibraryScanFailures())
+        fake.scanProgress = "{\"is_complete\":true,\"failures\":[]}"
+        assertEquals("[]", engine.getLibraryScanFailures())
+    }
+
+    @Test fun `hires exceptions release directory grant`() {
+        init()
+        fake.hiresThrows = IllegalStateException("invalid options")
+        assertThrows<IllegalStateException> { engine.checkHiResAuthenticity("/music/song.flac", "bad") }
+        assertEquals(0, fake.openLeases)
+    }
+
+    @Test fun `new engine entry points require initialization`() {
+        assertThrows<IllegalStateException> { engine.checkHiResAuthenticity("/song.flac", "{}") }
+        assertThrows<IllegalStateException> { engine.invokeExtensionAction("provider", "login") }
+        assertThrows<IllegalStateException> { engine.getLibraryScanFailures() }
+        assertThrows<IllegalStateException> { engine.reindexIsrc("/music", "ISRC", "/music/a.flac") }
+        assertTrue(fake.calls.isEmpty())
+    }
+
+    @Test fun `reindexIsrc forwards arguments with scoped grant`() {
+        init()
+        engine.reindexIsrc("/music", "ISRC", "/music/new.flac")
+        assertEquals(listOf("grant:/music", "addIsrc:/music:ISRC:/music/new.flac", "release"), fake.calls.takeLast(3))
+    }
+
     @Test fun lyricsDefaultsReachFactory() {
         init()
         assertEquals(listOf("[]", "{}"), createArgs.takeLast(2))

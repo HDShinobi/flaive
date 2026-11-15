@@ -42,6 +42,7 @@ interface RustCore : AutoCloseable {
     fun grantDownloadDirectories(directories: List<String>): AutoCloseable
     fun checkIsrcExists(directory: String, isrc: String): String
     fun addToIsrcIndex(directory: String, isrc: String, path: String)
+    fun checkHiResAuthenticity(path: String, optionsJson: String): String
     fun readAudioMetadata(path: String): String
     fun extractCoverToFile(audioPath: String, outputPath: String)
     fun editFileMetadata(path: String, metadataJson: String): String
@@ -49,6 +50,7 @@ interface RustCore : AutoCloseable {
     fun getLyricsLrc(spotifyId: String, track: String, artist: String, filePath: String, durationMs: Long): String
     fun embedLyricsToFile(path: String, lyrics: String): String
     fun setLibraryCoverCacheDirectory(directory: String)
+    fun getLibraryScanProgress(): String
     fun scanLibraryFolder(folder: String): String
 }
 

@@ -6,6 +6,7 @@ import com.mornye.backend.ExtensionEnvironment
 import com.mornye.backend.ExtensionManager
 import com.mornye.backend.LyricsRequest
 import com.mornye.backend.RequestLease
+import com.mornye.backend.checkHiresAuthenticity
 import com.zarz.mornye.CoreExtensionExecution
 import com.zarz.mornye.CoreFFmpegCommand
 import com.zarz.mornye.parseCoreFFmpegCommands
@@ -91,6 +92,8 @@ class UniffiRustCore private constructor(private val manager: ExtensionManager) 
     }
     override fun checkIsrcExists(directory: String, isrc: String): String = env { it.checkIsrcExists(directory, isrc, null) }
     override fun addToIsrcIndex(directory: String, isrc: String, path: String) = env { it.addToIsrcIndex(directory, isrc, path, null) }
+    override fun checkHiResAuthenticity(path: String, optionsJson: String): String =
+        checkHiresAuthenticity(path, optionsJson, null)
     override fun readAudioMetadata(path: String): String = manager.readAudioMetadata(path, "", "", null)
     override fun extractCoverToFile(audioPath: String, outputPath: String) = manager.extractCoverToFile(audioPath, outputPath, null)
     override fun editFileMetadata(path: String, metadataJson: String): String = manager.editFileMetadata(path, metadataJson, null)
@@ -101,6 +104,7 @@ class UniffiRustCore private constructor(private val manager: ExtensionManager) 
         manager.getLyricsLrc(LyricsRequest(spotifyId, track, artist, filePath, durationMs), null)
     override fun embedLyricsToFile(path: String, lyrics: String): String = manager.embedLyricsToFile(path, lyrics, null)
     override fun setLibraryCoverCacheDirectory(directory: String) = manager.setLibraryCoverCacheDirectory(directory)
+    override fun getLibraryScanProgress(): String = manager.getLibraryScanProgress()
     // Upstream retired the plain full scan; an empty snapshot makes the incremental scan a full one.
     override fun scanLibraryFolder(folder: String): String =
         JSONObject(manager.scanLibraryFolderIncremental(folder, "{}", null)).optJSONArray("scanned")?.toString() ?: "[]"

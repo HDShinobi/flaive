@@ -22,6 +22,8 @@ class FakeRustCore : RustCore {
     var consumeThrows: Exception? = null
     var actionResult = "{\"success\":true}"
     var findResult: String? = "qobuz-web"
+    var scanProgress = "{\"is_complete\":true,\"failures\":[{\"path\":\"/music/bad.flac\",\"message\":\"bad header\"}]}"
+    var hiresThrows: Exception? = null
     var closed = false
 
     private fun rec(s: String) { synchronized(calls) { calls += s } }
@@ -67,6 +69,12 @@ class FakeRustCore : RustCore {
     }
     override fun checkIsrcExists(directory: String, isrc: String) = isrcPath.also { rec("checkIsrc:$directory:$isrc") }
     override fun addToIsrcIndex(directory: String, isrc: String, path: String) = rec("addIsrc:$directory:$isrc:$path")
+    override fun checkHiResAuthenticity(path: String, optionsJson: String): String {
+        rec("hires:$path:$optionsJson")
+        hiresThrows?.let { throw it }
+        return "{\"verdict\":\"authentic\"}"
+    }
+    override fun getLibraryScanProgress() = scanProgress.also { rec("scanProgress") }
     override fun readAudioMetadata(path: String) = audioMetadata.also { rec("readAudio:$path") }
     override fun extractCoverToFile(audioPath: String, outputPath: String) = rec("extractCover:$audioPath:$outputPath")
     override fun editFileMetadata(path: String, metadataJson: String) = "{\"success\":true,\"method\":\"native\"}".also { rec("edit:$path") }

@@ -130,6 +130,7 @@ class RustEngine(
     override fun getInstalledExtensions(): String = requireCore().installed()
     override fun setExtensionEnabled(id: String, enabled: Boolean) = requireCore().setEnabled(id, enabled)
     override fun removeExtension(id: String) = requireCore().remove(id)
+    override fun invokeExtensionAction(id: String, action: String): String = requireCore().invokeAction(id, action)
     override fun getExtensionSettings(id: String): String = requireCore().settings(id)
     override fun setExtensionSettings(id: String, settingsJson: String) = requireCore().updateSettings(id, settingsJson)
     override fun getExtensionPendingAuth(extensionId: String): String = requireCore().pendingAuthJson(extensionId)
@@ -228,6 +229,17 @@ class RustEngine(
         return RustJson.duplicate(withGrant(c, outputDir) { c.checkIsrcExists(outputDir, isrc) })
     }
 
+    override fun checkHiResAuthenticity(path: String, optionsJson: String): String {
+        val c = requireCore()
+        val p = canonical(path)
+        return withGrant(c, parentOf(p)) { c.checkHiResAuthenticity(p, optionsJson) }
+    }
+
+    override fun reindexIsrc(outputDir: String, isrc: String, path: String) {
+        val c = requireCore()
+        withGrant(c, outputDir) { c.addToIsrcIndex(outputDir, isrc, path) }
+    }
+
     override fun getAudioQuality(path: String): String {
         val c = requireCore()
         val p = canonical(path)
@@ -282,6 +294,9 @@ class RustEngine(
             log("setLibraryCoverCacheDir: ${e.message}")
         }
     }
+
+    override fun getLibraryScanFailures(): String =
+        JSONObject(requireCore().getLibraryScanProgress()).optJSONArray("failures")?.toString() ?: "[]"
 
     override fun scanLibraryFolder(folderPath: String): String {
         val c = requireCore()
