@@ -5,7 +5,6 @@ import android.util.Log
 import org.json.JSONObject
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.Locale
 
 /** Native-worker only: Dart-fallback items (gate-rejected or stalled) are not converted. */
@@ -42,14 +41,16 @@ object AutoConvert {
             // Unlike upstream's unknown-resolution fallback, caps never increase resolution.
             val depth = t.maxBitDepth.takeIf { it > 0 && srcBits != null && srcBits > it }
             val rate = t.maxSampleRate.takeIf { it > 0 && srcRate != null && srcRate > it }
+            val sampleFormat = (if (depth != null && depth <= 16) "s16" else "s32") +
+                (if (t.format == "alac") "p" else "")
             if (depth != null || rate != null) {
                 val options = mutableListOf("resampler=swr")
                 if (rate != null) options.add("osr=$rate")
-                if (depth != null) options.add("osf=${if (depth <= 16) "s16" else "s32"}")
+                if (depth != null) options.add("osf=$sampleFormat")
                 a.addAll(listOf("-af", "aresample=${options.joinToString(":")}"))
             }
             if (depth != null) {
-                a.addAll(listOf("-sample_fmt", if (depth <= 16) "s16" else "s32"))
+                a.addAll(listOf("-sample_fmt", sampleFormat))
                 if (depth > 16) a.addAll(listOf("-bits_per_raw_sample", "24"))
             }
             a.addAll(listOf("-f", if (t.format == "flac") "flac" else "mp4"))
@@ -75,7 +76,8 @@ object AutoConvert {
     /** File transaction and policy are injectable; JVM tests never call Android APIs. */
     internal fun run(path: String, requestJson: String, probe: (String) -> String,
                      ffmpeg: (List<String>) -> Boolean, embed: (String) -> Unit = {},
-                     warning: (String) -> Unit = {}): String {
+                     warning: (String) -> Unit = {},
+                     mover: (File, File, Boolean) -> Unit = NonFlacMetadataEmbedder::moveOutput): String {
         var staged: File? = null
         try {
             val t = target(requestJson) ?: return path
@@ -108,9 +110,9 @@ object AutoConvert {
             check(staging.isFile && staging.length() > 0) { "Converted output missing or empty" }
             if (t.format != "flac") embed(staging.path)
             check(staging.isFile && staging.length() > 0) { "Tagged output missing or empty" }
-            // Same-directory atomic rename: an unsuccessful promotion leaves the original intact.
-            if (samePath) Files.move(staging.toPath(), output.toPath(),
-                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            // Reuse the Android 9 sdcardfs atomic/regular rename and copy fallback.
+            // Never delete the source before replacement is in place.
+            if (samePath) NonFlacMetadataEmbedder.replaceOutput(staging, output, mover)
             else Files.move(staging.toPath(), output.toPath())
             if (!samePath && !source.delete()) warning("Converted output adopted; source could not be deleted")
             return output.path

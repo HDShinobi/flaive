@@ -38,7 +38,7 @@ class AutoConvertSettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
-            if (format == 'flac') ...[
+            if (format == 'flac' || format == 'alac') ...[
               ListTile(
                 title: Text(t.downloadAutoConvertMaxBitDepth),
                 trailing: DropdownButton<int>(
@@ -70,7 +70,7 @@ class AutoConvertSettingsScreen extends ConsumerWidget {
                         child: Text(
                           n == 0
                               ? t.downloadAutoConvertKeepOriginal
-                              : '${n / 1000} kHz',
+                              : '${n % 1000 == 0 ? n ~/ 1000 : n / 1000} kHz',
                         ),
                       ),
                   ],
@@ -83,7 +83,7 @@ class AutoConvertSettingsScreen extends ConsumerWidget {
                   },
                 ),
               ),
-            ] else if (format != 'alac')
+            ] else
               ListTile(
                 title: Text(t.downloadAutoConvertBitrate),
                 trailing: DropdownButton<String>(

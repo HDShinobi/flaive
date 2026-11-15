@@ -590,7 +590,7 @@
   "downloadRedownloadFakeHiResSubtitle": "Off by default. Check Hi-Res downloads and replace only when every audio sample is preserved. Keep the original if verification or processing fails",
   "queueReplacedFakeHiRes": "Replaced fake Hi-Res with CD quality",
   "downloadAutoConvert": "Auto-convert downloads",
-  "downloadAutoConvertSubtitle": "Convert lossless downloads after verification. Caps only reduce resolution.",
+  "downloadAutoConvertSubtitle": "Convert lossless downloads after verification. Caps only reduce resolution. Lossy formats and ALAC replace the original FLAC file.",
   "downloadAutoConvertFormat": "Output format",
   "downloadAutoConvertMaxBitDepth": "Maximum bit depth",
   "downloadAutoConvertMaxSampleRate": "Maximum sample rate",

@@ -1214,7 +1214,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloadAutoConvertSubtitle =>
-      'Convert lossless downloads after verification. Caps only reduce resolution.';
+      'Convert lossless downloads after verification. Caps only reduce resolution. Lossy formats and ALAC replace the original FLAC file.';
 
   @override
   String get downloadAutoConvertFormat => 'Output format';

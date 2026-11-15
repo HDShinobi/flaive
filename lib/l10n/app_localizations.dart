@@ -2303,7 +2303,7 @@ abstract class AppLocalizations {
   /// No description provided for @downloadAutoConvertSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Convert lossless downloads after verification. Caps only reduce resolution.'**
+  /// **'Convert lossless downloads after verification. Caps only reduce resolution. Lossy formats and ALAC replace the original FLAC file.'**
   String get downloadAutoConvertSubtitle;
 
   /// No description provided for @downloadAutoConvertFormat.

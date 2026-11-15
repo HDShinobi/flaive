@@ -5,6 +5,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 class AutoConvertTest {
     @get:Rule val temp = TemporaryFolder()
@@ -39,7 +42,14 @@ class AutoConvertTest {
         val a = args("alac")
         assertEquals("alac", a[a.indexOf("-c:a") + 1])
         assertEquals("0:a", a[a.indexOf("-map") + 1])
-        assertTrue(a.contains("aresample=resampler=swr:osr=48000:osf=s16"))
+        assertTrue(a.contains("aresample=resampler=swr:osr=48000:osf=s16p"))
+        assertEquals("s16p", a[a.indexOf("-sample_fmt") + 1])
+    }
+    @Test fun `ALAC 24-bit cap uses planar s32 and raw sample bits`() {
+        val a = AutoConvert.ffmpegArgs(caps.copy(format = "alac", maxBitDepth = 24), "in", "out", 32, 96000)
+        assertTrue(a.contains("aresample=resampler=swr:osr=48000:osf=s32p"))
+        assertEquals("s32p", a[a.indexOf("-sample_fmt") + 1])
+        assertEquals("24", a[a.indexOf("-bits_per_raw_sample") + 1])
     }
     @Test fun `24-bit cap uses s32 and raw sample bits`() {
         val a = AutoConvert.ffmpegArgs(caps.copy(maxBitDepth = 24), "in", "out", 32, 96000)
@@ -101,6 +111,27 @@ class AutoConvertTest {
                 File(a[a.indexOf("-y") - 1]).writeText("capped"); true
             })
         assertEquals(src.path, path); assertEquals("capped", src.readText())
+    }
+    @Test fun `same-path promotion falls back when atomic move is unsupported`() {
+        val src = temp.newFile("song.flac").apply { writeText("original") }
+        val attempts = mutableListOf<Boolean>()
+        val warnings = mutableListOf<String>()
+        val path = AutoConvert.run(src.path, """{"auto_convert_downloads":true}""",
+            { """{"codec":"flac","bit_depth":24,"sample_rate":96000}""" },
+            { a -> File(a[a.indexOf("-y") - 1]).writeText("capped"); true },
+            warning = { warnings.add(it) },
+            mover = { from, to, atomic ->
+                attempts.add(atomic)
+                assertEquals("original", src.readText())
+                assertEquals("capped", from.readText())
+                if (atomic) throw AtomicMoveNotSupportedException(from.path, to.path, "sdcardfs")
+                Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            })
+        assertEquals(listOf(true, false), attempts)
+        assertEquals(src.path, path)
+        assertEquals("capped", src.readText())
+        assertTrue(warnings.isEmpty())
+        assertFalse(File(temp.root, "song.converting.flac").exists())
     }
     @Test fun `failed rename preserves source and colliding destination`() {
         val src = temp.newFile("song.flac").apply { writeText("original") }

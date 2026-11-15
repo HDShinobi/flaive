@@ -171,15 +171,21 @@ object NonFlacMetadataEmbedder {
         }
     }
 
-    internal fun replaceOutput(temp: File, original: File) {
+    internal fun moveOutput(from: File, to: File, atomic: Boolean) {
+        val options = if (atomic) arrayOf(StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING) else arrayOf(StandardCopyOption.REPLACE_EXISTING)
+        Files.move(from.toPath(), to.toPath(), *options)
+    }
+
+    internal fun replaceOutput(temp: File, original: File,
+                               mover: (File, File, Boolean) -> Unit = ::moveOutput) {
         try {
-            Files.move(temp.toPath(), original.toPath(),
-                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            mover(temp, original, true)
         } catch (_: IOException) {
             // Some Android 9 sdcardfs mounts reject atomic moves. Try their
             // regular rename before falling back to a serialized copy.
             try {
-                Files.move(temp.toPath(), original.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                mover(temp, original, false)
             } catch (_: IOException) {
                 temp.copyTo(original, overwrite = true)
                 temp.delete()

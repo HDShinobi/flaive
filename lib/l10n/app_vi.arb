@@ -590,7 +590,7 @@
   "downloadRedownloadFakeHiResSubtitle": "Nếu file 24-bit thực chất là 16-bit, tự tải bản CD thay thế",
   "queueReplacedFakeHiRes": "Đã thay bản Hi-Res giả bằng chất lượng CD",
   "downloadAutoConvert": "Tự chuyển đổi sau khi tải",
-  "downloadAutoConvertSubtitle": "Chuyển đổi nhạc lossless sau khi kiểm tra. Giới hạn chỉ giảm độ phân giải.",
+  "downloadAutoConvertSubtitle": "Chuyển đổi nhạc lossless sau khi kiểm tra. Giới hạn chỉ giảm độ phân giải. Định dạng lossy và ALAC sẽ thay thế (xoá) file FLAC gốc.",
   "downloadAutoConvertFormat": "Định dạng đầu ra",
   "downloadAutoConvertMaxBitDepth": "Độ sâu bit tối đa",
   "downloadAutoConvertMaxSampleRate": "Tần số lấy mẫu tối đa",

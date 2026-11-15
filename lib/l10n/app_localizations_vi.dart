@@ -1208,7 +1208,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get downloadAutoConvertSubtitle =>
-      'Chuyển đổi nhạc lossless sau khi kiểm tra. Giới hạn chỉ giảm độ phân giải.';
+      'Chuyển đổi nhạc lossless sau khi kiểm tra. Giới hạn chỉ giảm độ phân giải. Định dạng lossy và ALAC sẽ thay thế (xoá) file FLAC gốc.';
 
   @override
   String get downloadAutoConvertFormat => 'Định dạng đầu ra';
