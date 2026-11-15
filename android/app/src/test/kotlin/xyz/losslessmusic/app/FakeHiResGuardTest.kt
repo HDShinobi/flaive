@@ -6,6 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 
 class FakeHiResGuardTest {
@@ -18,12 +19,14 @@ class FakeHiResGuardTest {
     private fun success(path: String) = JSONObject().put("success", true).put("file_path", path)
     private fun run(
         first: String = verdict(), equivalent: Boolean = true,
+        outputDir: File = temp.root,
         cancelled: () -> Boolean = { false },
         download: (String) -> JSONObject = { original.writeText("CD"); success(original.path) },
         check: ((String, String) -> String)? = null,
     ): FakeHiResGuard.Result {
         original.writeText("original")
-        return FakeHiResGuard.run("item", original.path, "{\"quality\":\"hires\",\"isrc\":\"ABC\"}", root,
+        return FakeHiResGuard.run("item", original.path, JSONObject().put("quality", "hires").put("isrc", "ABC")
+            .put("output_dir", outputDir.path).toString(), root,
             check ?: { path, options ->
                 if (JSONObject(options).has("verify_replacement_path")) {
                     assertEquals("original", File(path).readText())
@@ -234,6 +237,84 @@ class FakeHiResGuardTest {
         val saved = File(dir, "notes.txt").apply { writeText("planted") }
         FakeHiResGuard.recoverOrphans(root)
         assertEquals("user notes", target.readText())
+        assertEquals("planted", saved.readText())
+    }
+    @Test fun `unreadable sibling of output dir does not abort replacement`() {
+        val output = temp.newFolder("output")
+        val unreadable = temp.newFolder("Android-data")
+        assertTrue(unreadable.setReadable(false, false))
+        try {
+            assertNull(unreadable.listFiles())
+            assertTrue(run(outputDir = output).replaced)
+        } finally {
+            assertTrue(unreadable.setReadable(true, true))
+        }
+    }
+    @Test fun `unreadable subdirectory does not abort replacement`() {
+        val unreadable = temp.newFolder("restricted")
+        assertTrue(unreadable.setReadable(false, false))
+        try {
+            assertNull(unreadable.listFiles())
+            assertTrue(run().replaced)
+        } finally {
+            assertTrue(unreadable.setReadable(true, true))
+        }
+    }
+    @Test fun `new output outside output dir survives rollback`() {
+        val output = temp.newFolder("output")
+        val replacement = File(temp.root, "outside.flac")
+        assertRestored(run(outputDir = output, equivalent = false, download = {
+            replacement.writeText("outside output")
+            success(replacement.path)
+        }))
+        assertEquals("outside output", replacement.readText())
+    }
+    @Test fun `existing file in unreadable subtree survives rollback`() {
+        val unreadable = temp.newFolder("restricted")
+        val existing = File(unreadable, "existing.flac").apply { writeText("user file") }
+        var downloaded = false
+        assertTrue(unreadable.setReadable(false, false))
+        try {
+            assertNull(unreadable.listFiles())
+            assertRestored(run(equivalent = false, download = {
+                downloaded = true
+                assertTrue(unreadable.setReadable(true, true))
+                success(existing.path)
+            }))
+            assertTrue(downloaded)
+            assertEquals("user file", existing.readText())
+        } finally {
+            assertTrue(unreadable.setReadable(true, true))
+        }
+    }
+    @Test fun `new output inside output dir is deleted on rollback`() {
+        val output = temp.newFolder("output")
+        val replacement = File(output, "new/song.flac")
+        assertRestored(run(outputDir = output, equivalent = false, download = {
+            requireNotNull(replacement.parentFile).mkdirs()
+            replacement.writeText("CD")
+            success(replacement.path)
+        }))
+        assertFalse(replacement.exists())
+    }
+    @Test fun `recovery canonicalization failure does not escape`() {
+        val broken = object : File(root.path) {
+            override fun getCanonicalFile(): File = throw IOException("canonicalization failed")
+        }
+        FakeHiResGuard.recoverOrphans(broken)
+    }
+    @Test fun `recovery rejects destination under symlink backup parent`() {
+        val downloads = temp.newFolder("downloads")
+        val outside = temp.newFolder("outside")
+        val backups = File(outside, ".fake-hires").apply { mkdirs() }
+        val linked = File(downloads, ".fake-hires")
+        Files.createSymbolicLink(linked.toPath(), backups.toPath())
+        val target = File(outside, "song.flac").apply { writeText("user file") }
+        val dir = File(backups, "item").apply { mkdirs() }
+        File(dir, "original_path.txt").writeText(target.path)
+        val saved = File(dir, "song.flac").apply { writeText("planted") }
+        FakeHiResGuard.recoverOrphans(linked)
+        assertEquals("user file", target.readText())
         assertEquals("planted", saved.readText())
     }
     @Test fun `shouldCheck uses actual format and resolution`() {

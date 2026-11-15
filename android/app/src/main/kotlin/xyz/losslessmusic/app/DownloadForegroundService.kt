@@ -330,8 +330,12 @@ class DownloadForegroundService : Service() {
     private suspend fun runWorker(requests: List<WorkerRequest>) {
         // Recover once, before admitting any downloads that could overwrite an orphan.
         requests.mapNotNull { request ->
-            runCatching { fakeHiResBackupRoot(JSONObject(request.requestJson)).canonicalFile }.getOrNull()
-        }.distinct().forEach { FakeHiResGuard.recoverOrphans(it) }
+            runCatching { fakeHiResBackupRoot(JSONObject(request.requestJson)).absoluteFile }.getOrNull()
+        }.distinct().forEach { root ->
+            runCatching { FakeHiResGuard.recoverOrphans(root) }.onFailure {
+                android.util.Log.w("DownloadForegroundService", "Hi-Res backup recovery failed: $root", it)
+            }
+        }
         gate.runAll(requests,
             providerKey = { request ->
                 val payload = try { JSONObject(request.requestJson) } catch (_: Exception) { JSONObject() }

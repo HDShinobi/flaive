@@ -66,10 +66,23 @@ object FakeHiResGuard {
             // The callback can return an arbitrary output path. Snapshot existing
             // paths before calling it; never infer ownership from success alone.
             val canonicalRoot = backupRoot.canonicalFile
-            val downloadRoot = requireNotNull(canonicalRoot.parentFile)
-            val existingPaths = downloadRoot.walkTopDown()
-                .onEnter { it.canonicalFile != canonicalRoot && !Files.isSymbolicLink(it.toPath()) }
-                .onFail { _, error -> throw error }
+            val outputRoot = File(request.getString("output_dir").also {
+                require(it.isNotBlank()) { "Missing output directory" }
+            }).canonicalFile
+            val excludedTrees = mutableListOf(canonicalRoot.toPath())
+            val existingPaths = outputRoot.walkTopDown()
+                .onEnter {
+                    val canonical = it.canonicalFile.toPath()
+                    if (canonical.startsWith(canonicalRoot.toPath()) || Files.isSymbolicLink(it.toPath())) {
+                        excludedTrees.add(canonical)
+                        false
+                    } else true
+                }
+                .onFail { dir, error ->
+                    // Contents of an unlistable tree have unknown ownership.
+                    excludedTrees.add(dir.canonicalFile.toPath())
+                    log.log(Level.WARNING, "Skipping unreadable output directory: $dir", error)
+                }
                 .map { it.canonicalPath }.toHashSet()
             val result = redownload(request.toString())
             val newPath = result.optString("file_path", "").trim()
@@ -80,7 +93,8 @@ object FakeHiResGuard {
                 if (candidate.toPath().startsWith(backupRoot.canonicalFile.toPath())) return kept
                 val isOriginal = candidate == original.canonicalFile
                 val isNewOutput = result.optBoolean("success", false) &&
-                    candidate.toPath().startsWith(downloadRoot.toPath()) &&
+                    candidate.toPath().startsWith(outputRoot.toPath()) &&
+                    excludedTrees.none { candidate.toPath().startsWith(it) } &&
                     candidate.path !in existingPaths
                 if (isOriginal || isNewOutput) replacement = candidate
                 // Existing distinct files may be verified, but are never owned
@@ -140,13 +154,18 @@ object FakeHiResGuard {
     }
 
     fun recoverOrphans(backupRoot: File) {
-        val directories = try { backupRoot.listFiles().orEmpty().filter { it.isDirectory } }
+        val canonicalRoot: File
+        val downloadRoot: java.nio.file.Path
+        val directories = try {
+            canonicalRoot = backupRoot.canonicalFile
+            // Preserve the requested root boundary even if .fake-hires is a symlink.
+            downloadRoot = requireNotNull(backupRoot.absoluteFile.parentFile).canonicalFile.toPath()
+            backupRoot.listFiles().orEmpty().filter { it.isDirectory }
+        }
         catch (e: Exception) {
             log.log(Level.SEVERE, "Cannot list backups: $backupRoot", e)
             return
         }
-        val canonicalRoot = backupRoot.canonicalFile
-        val downloadRoot = requireNotNull(canonicalRoot.parentFile).toPath()
         for (dir in directories) {
             try {
                 synchronized(activeBackups) {
