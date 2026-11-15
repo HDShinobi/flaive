@@ -43,6 +43,32 @@ class LibraryEntry {
       ? null
       : value;
 
+  /// Preserve scan metadata when the lazy file-size cache is populated.
+  LibraryEntry withSizeBytes(int size) => LibraryEntry(
+    path: path,
+    name: name,
+    title: title,
+    sizeBytes: size,
+    artistName: artistName,
+    albumName: albumName,
+    coverPath: coverPath,
+    durationMs: durationMs,
+    format: format,
+    verified: verified,
+    tagsFromFallback: tagsFromFallback,
+    trackNumber: trackNumber,
+    discNumber: discNumber,
+    isrc: isrc,
+    albumArtist: albumArtist,
+    releaseDate: releaseDate,
+    genre: genre,
+    composer: composer,
+    label: label,
+    copyright: copyright,
+    totalTracks: totalTracks,
+    totalDiscs: totalDiscs,
+  );
+
   const LibraryEntry({
     required this.path,
     required this.name,

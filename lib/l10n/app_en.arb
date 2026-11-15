@@ -671,5 +671,17 @@
         "type": "int"
       }
     }
+  },
+  "librarySort": "Sort library",
+  "librarySortTitle": "Title",
+  "librarySortSizeDesc": "File size (largest first)",
+  "librarySortSizeAsc": "File size (smallest first)",
+  "libraryScanFailureCount": "{count} files could not be read",
+  "@libraryScanFailureCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

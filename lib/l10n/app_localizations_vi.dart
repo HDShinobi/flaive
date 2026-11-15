@@ -1346,4 +1346,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String historyFindMovedResult(int relinked, int missing) {
     return 'Đã liên kết lại $relinked; còn thiếu: $missing.';
   }
+
+  @override
+  String get librarySort => 'Sắp xếp thư viện';
+
+  @override
+  String get librarySortTitle => 'Tiêu đề';
+
+  @override
+  String get librarySortSizeDesc => 'Kích thước tệp (lớn nhất trước)';
+
+  @override
+  String get librarySortSizeAsc => 'Kích thước tệp (nhỏ nhất trước)';
+
+  @override
+  String libraryScanFailureCount(int count) {
+    return 'Không đọc được $count tệp';
+  }
 }

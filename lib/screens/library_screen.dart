@@ -62,31 +62,67 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final asyncEntries = ref.watch(libraryProvider);
+    final asyncEntries = ref.watch(sortedLibraryProvider);
+    final failures = ref.watch(libraryStateProvider).scanFailures;
+    final sort = ref.watch(librarySortProvider).value ?? LibrarySort.title;
     final libraryBusy = ref.watch(libraryBusyProvider);
 
     return Scaffold(
       appBar: AppBar(
-        leading: _selecting ? IconButton(icon: const Icon(Icons.close),
-          tooltip: t.batchRefreshDismiss,
-          onPressed: () => setState(_selected.clear)) : null,
-        title: Text(_selecting ? t.librarySelectedCount(_selected.length) : t.tabLibrary),
+        leading: _selecting
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: t.batchRefreshDismiss,
+                onPressed: () => setState(_selected.clear),
+              )
+            : null,
+        title: Text(
+          _selecting ? t.librarySelectedCount(_selected.length) : t.tabLibrary,
+        ),
         actions: [
+          PopupMenuButton<LibrarySort>(
+            icon: const Icon(Icons.sort),
+            tooltip: t.librarySort,
+            initialValue: sort,
+            onSelected: (value) =>
+                ref.read(librarySortProvider.notifier).setSort(value),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: LibrarySort.title,
+                child: Text(t.librarySortTitle),
+              ),
+              PopupMenuItem(
+                value: LibrarySort.sizeDesc,
+                child: Text(t.librarySortSizeDesc),
+              ),
+              PopupMenuItem(
+                value: LibrarySort.sizeAsc,
+                child: Text(t.librarySortSizeAsc),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.drive_file_move_outlined),
             tooltip: t.reorganizeExisting,
             onPressed: () async {
-              await Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => LibraryReorganizeScreen(
-                  selection: _selecting ? Set.of(_selected) : null)));
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => LibraryReorganizeScreen(
+                    selection: _selecting ? Set.of(_selected) : null,
+                  ),
+                ),
+              );
               if (mounted) setState(_selected.clear);
             },
           ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: t.downloadHistory,
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const DownloadHistoryScreen())),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DownloadHistoryScreen(),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -100,88 +136,178 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(t.libraryError)),
         data: (entries) {
-          if (entries.isEmpty) {
-            return Center(child: Text(t.libraryEmpty));
-          }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  t.libraryCount(entries.length),
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              if (_selecting)
-                Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Wrap(spacing: 8, children: [
-                    TextButton(onPressed: () => setState(() {
-                      _selected.addAll(_filter(entries).where((e) =>
-                        _segment != 2 || e.albumName == null).map((e) => e.path));
-                    }), child: Text(t.librarySelectAll)),
-                    TextButton(onPressed: () => setState(() {
-                      final albums = entries.where((e) => _selected.contains(e.path) &&
-                        e.albumName != null).map((e) =>
-                          ((e.artistName ?? '').toLowerCase(), e.albumName!.toLowerCase())).toSet();
-                      _selected.addAll(entries.where((e) => e.albumName != null &&
-                        albums.contains(((e.artistName ?? '').toLowerCase(),
-                          e.albumName!.toLowerCase()))).map((e) => e.path));
-                    }), child: Text(t.librarySelectAlbum)),
-                    TextButton.icon(icon: const Icon(Icons.auto_fix_high),
-                      onPressed: libraryBusy ? null : () {
-                        final tracks = entries.where((e) => _selected.contains(e.path)).toList();
-                        unawaited(ref.read(batchReEnrichProvider.notifier).start(tracks));
-                        setState(_selected.clear);
-                      }, label: Text(t.batchRefreshMetadata)),
-                    if (libraryBusy) Text(t.libraryBusyHint),
-                  ])),
-              // Segment toggle buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: ToggleButtons(
-                  isSelected: [
-                    _segment == 0,
-                    _segment == 1,
-                    _segment == 2,
-                  ],
-                  onPressed: (index) => setState(() => _segment = index),
-                  borderRadius: BorderRadius.circular(8),
-                  constraints: const BoxConstraints(minHeight: 36, minWidth: 72),
-                  children: [
-                    Text(t.libraryAll),
-                    Text(t.libraryAlbums),
-                    Text(t.librarySingles),
-                  ],
-                ),
-              ),
-              // Search field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: TextField(
-                  controller: _searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: t.librarySearchHint,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () => _searchCtrl.clear(),
-                          )
-                        : null,
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8, horizontal: 12),
-                    isDense: true,
-                    border: const OutlineInputBorder(),
+              if (failures.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.warning_amber_outlined),
+                  title: Text(t.libraryScanFailureCount(failures.length)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => SafeArea(
+                      child: SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.6,
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                t.libraryScanFailureCount(failures.length),
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: failures.length,
+                                itemBuilder: (_, index) => ListTile(
+                                  title: Text(failures[index].fileName),
+                                  subtitle: Text(failures[index].message),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              // List area
-              Expanded(
-                child: _buildList(context, entries),
-              ),
-              // Serve banner always at bottom
-              ServeBanner(count: entries.length),
+              if (entries.isEmpty)
+                Expanded(child: Center(child: Text(t.libraryEmpty)))
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    t.libraryCount(entries.length),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                if (_selecting)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: () => setState(() {
+                            _selected.addAll(
+                              _filter(entries)
+                                  .where(
+                                    (e) => _segment != 2 || e.albumName == null,
+                                  )
+                                  .map((e) => e.path),
+                            );
+                          }),
+                          child: Text(t.librarySelectAll),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(() {
+                            final albums = entries
+                                .where(
+                                  (e) =>
+                                      _selected.contains(e.path) &&
+                                      e.albumName != null,
+                                )
+                                .map(
+                                  (e) => (
+                                    (e.artistName ?? '').toLowerCase(),
+                                    e.albumName!.toLowerCase(),
+                                  ),
+                                )
+                                .toSet();
+                            _selected.addAll(
+                              entries
+                                  .where(
+                                    (e) =>
+                                        e.albumName != null &&
+                                        albums.contains((
+                                          (e.artistName ?? '').toLowerCase(),
+                                          e.albumName!.toLowerCase(),
+                                        )),
+                                  )
+                                  .map((e) => e.path),
+                            );
+                          }),
+                          child: Text(t.librarySelectAlbum),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.auto_fix_high),
+                          onPressed: libraryBusy
+                              ? null
+                              : () {
+                                  final tracks = entries
+                                      .where((e) => _selected.contains(e.path))
+                                      .toList();
+                                  unawaited(
+                                    ref
+                                        .read(batchReEnrichProvider.notifier)
+                                        .start(tracks),
+                                  );
+                                  setState(_selected.clear);
+                                },
+                          label: Text(t.batchRefreshMetadata),
+                        ),
+                        if (libraryBusy) Text(t.libraryBusyHint),
+                      ],
+                    ),
+                  ),
+                // Segment toggle buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: ToggleButtons(
+                    isSelected: [_segment == 0, _segment == 1, _segment == 2],
+                    onPressed: (index) => setState(() => _segment = index),
+                    borderRadius: BorderRadius.circular(8),
+                    constraints: const BoxConstraints(
+                      minHeight: 36,
+                      minWidth: 72,
+                    ),
+                    children: [
+                      Text(t.libraryAll),
+                      Text(t.libraryAlbums),
+                      Text(t.librarySingles),
+                    ],
+                  ),
+                ),
+                // Search field
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      hintText: t.librarySearchHint,
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () => _searchCtrl.clear(),
+                            )
+                          : null,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                // List area
+                Expanded(child: _buildList(context, entries)),
+                // Serve banner always at bottom
+                ServeBanner(count: entries.length),
+              ],
             ],
           );
         },
@@ -230,7 +356,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       return const Center(child: SizedBox.shrink());
     }
 
-    final albums = grouped.entries.toList();
+    final sort = ref.watch(librarySortProvider).value ?? LibrarySort.title;
+    final sizes = sort == LibrarySort.title ? <(String, String), int>{} : {
+      for (final album in grouped.entries)
+        album.key: album.value.fold<int>(0, (sum, e) => sum + e.sizeBytes),
+    };
+    final albums = grouped.entries.toList()
+      ..sort((a, b) {
+        if (sort != LibrarySort.title) {
+          final bySize = sizes[a.key]!.compareTo(sizes[b.key]!);
+          if (bySize != 0) {
+            return sort == LibrarySort.sizeDesc ? -bySize : bySize;
+          }
+        }
+        final byTitle = a.key.$2.compareTo(b.key.$2);
+        return byTitle != 0 ? byTitle : a.key.$1.compareTo(b.key.$1);
+      });
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -247,8 +388,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         final album = kv.key.$2;
         final tracks = kv.value;
         // Pick the first track that has a local cover extracted.
-        final coverEntry =
-            tracks.firstWhere((e) => e.coverPath != null, orElse: () => tracks.first);
+        final coverEntry = tracks.firstWhere(
+          (e) => e.coverPath != null,
+          orElse: () => tracks.first,
+        );
         return _AlbumTile(
           artist: artist,
           album: album,

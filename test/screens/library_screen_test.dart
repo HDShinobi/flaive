@@ -27,7 +27,13 @@ class _AlacFakeBridge extends BackendBridge {
   Future<void> setLibraryCoverCacheDir(String cacheDir) async {}
 
   @override
-  Future<List<Map<String, dynamic>>> scanLibraryFolder(String folderPath) async {
+  Future<List<({String path, String message})>>
+  getLibraryScanFailures() async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> scanLibraryFolder(
+    String folderPath,
+  ) async {
     final alacFile = File('$_dir/01. Track.alac');
     return [
       <String, dynamic>{
@@ -74,10 +80,7 @@ const singleEntry = LibraryEntry(
 
 final _router = GoRouter(
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const LibraryScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const LibraryScreen()),
     GoRoute(
       path: '/server',
       builder: (context, state) => const Scaffold(body: Text('Server')),
@@ -99,6 +102,72 @@ Widget buildLibraryScreen(List<dynamic> overrides) {
 }
 
 void main() {
+  testWidgets('failure banner opens sheet even for an empty library', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      buildLibraryScreen([
+        libraryProvider.overrideWith((ref) async {
+          await Future<void>.delayed(Duration.zero);
+          ref.read(libraryStateProvider.notifier).setFailures([
+            const LibraryScanFailure(
+              path: '/music/broken.flac',
+              message: 'Invalid header',
+            ),
+          ]);
+          return [];
+        }),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 files could not be read'));
+    await tester.pumpAndSettle();
+    expect(find.text('broken.flac'), findsOneWidget);
+    expect(find.text('Invalid header'), findsOneWidget);
+  });
+
+  testWidgets('sort sizeDesc orders albums by summed size', (tester) async {
+    SharedPreferences.setMockInitialValues({'library_sort': 'sizeDesc'});
+    await tester.pumpWidget(
+      buildLibraryScreen([
+        libraryProvider.overrideWith(
+          (_) async => [
+            albumEntry1,
+            albumEntry2,
+            const LibraryEntry(
+              path: '/extra.flac',
+              name: 'extra.flac',
+              sizeBytes: 3000000,
+              artistName: 'ArtistB',
+              albumName: 'AlbumTwo',
+              format: 'FLAC',
+              verified: true,
+            ),
+          ],
+        ),
+        librarySizedEntriesProvider.overrideWith(
+          (ref) => ref.watch(libraryProvider.future),
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Albums'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.text('AlbumTwo')).dx,
+      lessThan(tester.getTopLeft(find.text('AlbumOne')).dx),
+    );
+    await tester.tap(find.byIcon(Icons.sort));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('File size (smallest first)'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.text('AlbumOne')).dx,
+      lessThan(tester.getTopLeft(find.text('AlbumTwo')).dx),
+    );
+  });
+
   testWidgets('long press selects, album/all selection and refresh dispatch batch', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final bridge = FakeBridge()..gate = Completer<void>();

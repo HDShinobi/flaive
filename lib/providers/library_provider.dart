@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/library_scan_failure.dart';
 
 import '../models/library_entry.dart';
 import '../models/track.dart';
@@ -14,19 +16,109 @@ import 'download_dir_provider.dart';
 import 'extensions_provider.dart';
 
 export '../models/library_entry.dart';
+export '../models/library_scan_failure.dart';
+
+enum LibrarySort { title, sizeDesc, sizeAsc }
+
+class LibraryState {
+  const LibraryState({this.scanFailures = const []});
+  final List<LibraryScanFailure> scanFailures;
+}
+
+class LibraryStateNotifier extends Notifier<LibraryState> {
+  @override
+  LibraryState build() => const LibraryState();
+
+  void setFailures(List<LibraryScanFailure> failures) {
+    state = LibraryState(scanFailures: List.unmodifiable(failures));
+  }
+}
+
+final libraryStateProvider =
+    NotifierProvider<LibraryStateNotifier, LibraryState>(
+      LibraryStateNotifier.new,
+    );
+
+class LibrarySortNotifier extends AsyncNotifier<LibrarySort> {
+  @override
+  Future<LibrarySort> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('library_sort');
+    return LibrarySort.values.where((sort) => sort.name == saved).firstOrNull ??
+        LibrarySort.title;
+  }
+
+  Future<void> setSort(LibrarySort sort) async {
+    await future;
+    state = AsyncData(sort);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('library_sort', sort.name);
+  }
+}
+
+final librarySortProvider =
+    AsyncNotifierProvider<LibrarySortNotifier, LibrarySort>(
+      LibrarySortNotifier.new,
+    );
+
+// Watched only for size sorts. Keep the completed result until libraryProvider
+// emits a new scan, so switching size direction never repeats filesystem I/O.
+final librarySizedEntriesProvider = FutureProvider<List<LibraryEntry>>((
+  ref,
+) async {
+  final entries = await ref.watch(libraryProvider.future);
+  final sized = <LibraryEntry>[];
+  for (var start = 0; start < entries.length; start += 32) {
+    if (!ref.mounted) return [];
+    sized.addAll(
+      await Future.wait(
+        entries.skip(start).take(32).map((entry) async {
+          var size = 0;
+          try {
+            final stat = await File(entry.path).stat();
+            if (stat.type == FileSystemEntityType.file && stat.size >= 0) {
+              size = stat.size;
+            }
+          } on FileSystemException {
+            // Missing or unreadable files remain sortable with size zero.
+          }
+          return entry.withSizeBytes(size);
+        }),
+      ),
+    );
+  }
+  return sized;
+});
+
+final sortedLibraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
+  final sort = await ref.watch(librarySortProvider.future);
+  if (!ref.mounted) return [];
+  final entries = await ref.watch(
+    sort == LibrarySort.title
+        ? libraryProvider.future
+        : librarySizedEntriesProvider.future,
+  );
+  return [...entries]..sort((a, b) {
+    final bySize = sort == LibrarySort.title
+        ? 0
+        : a.sizeBytes.compareTo(b.sizeBytes);
+    if (bySize != 0) return sort == LibrarySort.sizeDesc ? -bySize : bySize;
+    return (a.title ?? a.name).compareTo(b.title ?? b.name);
+  });
+});
 
 // Override in tests to provide a temp dir without calling path_provider.
-final libraryCoverCacheDirProvider = Provider<Future<String>>(
-  (_) async {
-    final base = await getApplicationSupportDirectory();
-    final d = Directory('${base.path}/covers');
-    await d.create(recursive: true);
-    return d.path;
-  },
-);
+final libraryCoverCacheDirProvider = Provider<Future<String>>((_) async {
+  final base = await getApplicationSupportDirectory();
+  final d = Directory('${base.path}/covers');
+  await d.create(recursive: true);
+  return d.path;
+});
 
 final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
   final dir = await ref.watch(downloadDirProvider.future);
+  if (!ref.mounted) return [];
+  ref.read(libraryStateProvider.notifier).setFailures([]);
   final d = Directory(dir);
   if (!d.existsSync()) return [];
 
@@ -44,11 +136,21 @@ final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
 
   // Scan the folder — Go reads embedded tags for ALL files.
   final scanned = await bridge.scanLibraryFolder(dir);
-  await cleanupReEnrichOrphans(dir, candidates: scanned
-      .map((item) => item['filePath'] as String? ?? ''));
-  final items = scanned.where((item) =>
-    !(item['filePath'] as String? ?? '').contains('/.fake-hires/') &&
-    !isReEnrichTemporary(item['filePath'] as String? ?? ''));
+  final failures = await bridge.getLibraryScanFailures();
+  if (!ref.mounted) return [];
+  ref.read(libraryStateProvider.notifier).setFailures([
+    for (final failure in failures)
+      LibraryScanFailure(path: failure.path, message: failure.message),
+  ]);
+  await cleanupReEnrichOrphans(
+    dir,
+    candidates: scanned.map((item) => item['filePath'] as String? ?? ''),
+  );
+  final items = scanned.where(
+    (item) =>
+        !(item['filePath'] as String? ?? '').contains('/.fake-hires/') &&
+        !isReEnrichTemporary(item['filePath'] as String? ?? ''),
+  );
 
   final entries = items.map((item) {
     final filePath = item['filePath'] as String? ?? '';
@@ -86,7 +188,7 @@ final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
       title: (item['trackName'] as String?)?.trim().isNotEmpty == true
           ? item['trackName'] as String
           : null,
-      sizeBytes: 0,  // lengthSync removed — not rendered in UI, causes sync I/O
+      sizeBytes: 0, // Filled lazily for size sorts.
       artistName: artistName,
       albumName: albumName,
       coverPath: (coverPath != null && coverPath.isNotEmpty) ? coverPath : null,

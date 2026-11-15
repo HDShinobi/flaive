@@ -1350,4 +1350,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String historyFindMovedResult(int relinked, int missing) {
     return 'Relinked $relinked; still missing: $missing.';
   }
+
+  @override
+  String get librarySort => 'Sort library';
+
+  @override
+  String get librarySortTitle => 'Title';
+
+  @override
+  String get librarySortSizeDesc => 'File size (largest first)';
+
+  @override
+  String get librarySortSizeAsc => 'File size (smallest first)';
+
+  @override
+  String libraryScanFailureCount(int count) {
+    return '$count files could not be read';
+  }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,9 @@ class _FakeScanBridge extends BackendBridge {
 
   @override
   Future<void> setLibraryCoverCacheDir(String cacheDir) async {}
+
+  @override
+  Future<List<({String path, String message})>> getLibraryScanFailures() async => [];
 
   @override
   Future<List<Map<String, dynamic>>> scanLibraryFolder(String folderPath) async {
@@ -65,6 +69,7 @@ Widget buildLibraryScreen(List<dynamic> overrides) {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   group('LibraryScreen widget tests (hermetic)', () {
     testWidgets('shows entries and count header when library has files',
         (tester) async {

@@ -2545,6 +2545,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Relinked {relinked}; still missing: {missing}.'**
   String historyFindMovedResult(int relinked, int missing);
+
+  /// No description provided for @librarySort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort library'**
+  String get librarySort;
+
+  /// No description provided for @librarySortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get librarySortTitle;
+
+  /// No description provided for @librarySortSizeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'File size (largest first)'**
+  String get librarySortSizeDesc;
+
+  /// No description provided for @librarySortSizeAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'File size (smallest first)'**
+  String get librarySortSizeAsc;
+
+  /// No description provided for @libraryScanFailureCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files could not be read'**
+  String libraryScanFailureCount(int count);
 }
 
 class _AppLocalizationsDelegate

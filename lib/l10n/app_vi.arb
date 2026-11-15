@@ -671,5 +671,17 @@
         "type": "int"
       }
     }
+  },
+  "librarySort": "Sắp xếp thư viện",
+  "librarySortTitle": "Tiêu đề",
+  "librarySortSizeDesc": "Kích thước tệp (lớn nhất trước)",
+  "librarySortSizeAsc": "Kích thước tệp (nhỏ nhất trước)",
+  "libraryScanFailureCount": "Không đọc được {count} tệp",
+  "@libraryScanFailureCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

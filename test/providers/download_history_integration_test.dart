@@ -71,6 +71,9 @@ class Bridge extends BackendBridge {
   @override
   Future<void> setLibraryCoverCacheDir(String path) async {}
   @override
+  Future<List<({String path, String message})>> getLibraryScanFailures() async => [];
+
+  @override
   Future<List<Map<String, dynamic>>> scanLibraryFolder(String path) async {
     scans++;
     return scan;
