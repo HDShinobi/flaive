@@ -111,6 +111,33 @@ void main() {
       svc = ExtensionRegistryService(_buildMockClient());
     });
 
+    test('skips registry entries for non-JavaScript runtimes', () async {
+      final service = ExtensionRegistryService(MockClient((request) async {
+        if (request.url.toString() == _aggregatorUrl) {
+          return http.Response(
+              jsonEncode({
+                'repos': [
+                  {'name': 'r', 'url': _registry1Url}
+                ]
+              }),
+              200);
+        }
+        return http.Response(
+            jsonEncode({
+              'extensions': [
+                {'id': 'js-default', 'download_url': _downloadUrl},
+                {'id': 'js-explicit', 'runtime': 'javascript', 'download_url': _downloadUrl},
+                {'id': 'py', 'runtime': 'python', 'download_url': _downloadUrl},
+              ]
+            }),
+            200);
+      }));
+
+      final ids = (await service.fetchCatalog(_aggregatorUrl)).map((e) => e.id);
+
+      expect(ids, unorderedEquals(['js-default', 'js-explicit']));
+    });
+
     for (final status in [404, 200]) {
       test('logs a warning when skipping a registry (HTTP $status)', () async {
         final log = AppLog();

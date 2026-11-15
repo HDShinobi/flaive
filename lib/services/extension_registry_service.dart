@@ -35,10 +35,11 @@ class ExtensionRegistryService {
         }
         final reg = jsonDecode(regRes.body) as Map<String, dynamic>;
         for (final e in (reg['extensions'] as List? ?? [])) {
-          final se = StoreExtension.fromRegistryJson(
-            Map<String, dynamic>.from(e as Map),
-            name,
-          );
+          final entry = Map<String, dynamic>.from(e as Map);
+          // Upstream 62eec0f6: entries for other hosts (e.g. "python") share registry.json.
+          final runtime = entry['runtime'];
+          if (runtime != null && runtime != 'javascript') continue;
+          final se = StoreExtension.fromRegistryJson(entry, name);
           byId.putIfAbsent(se.id, () => se);
         }
       } catch (e) {
