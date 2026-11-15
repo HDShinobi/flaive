@@ -452,7 +452,7 @@ class DownloadForegroundService : Service() {
                         shouldCancel = { workerStopped || !itemContext.isActive }).first &&
                         !workerStopped && itemContext.isActive
                 })
-            if (convertedPath != finalizedPath) {
+            if (guarded.redownloaded || convertedPath != finalizedPath) {
                 try {
                     val isrc = payload.optString("isrc", "")
                     if (isrc.isNotEmpty()) Engines.current.reindexIsrc(

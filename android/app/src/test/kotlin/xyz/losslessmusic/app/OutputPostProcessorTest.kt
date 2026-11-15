@@ -7,6 +7,25 @@ import org.junit.Test
 import java.nio.file.Files
 
 class OutputPostProcessorTest {
+    @Test fun failedMetadataRenamesKeepOriginalAndCompletedTemp() {
+        val dir = Files.createTempDirectory("embed-rename-fail").toFile()
+        try {
+            val original = dir.resolve("song.m4a").apply { writeText("original audio") }
+            val temp = dir.resolve("temp.m4a").apply { writeText("tagged audio") }
+            var moves = 0
+            try {
+                NonFlacMetadataEmbedder.replaceOutput(temp, original) { _, _, _ ->
+                    moves++
+                    throw java.io.IOException("injected rename failure")
+                }
+                fail("Both failed renames must propagate without copying")
+            } catch (_: java.io.IOException) { }
+            assertEquals(2, moves)
+            assertEquals("original audio", original.readText())
+            assertEquals("tagged audio", temp.readText())
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun sameCanonicalPathWaitsButOtherPathsCanProceed() = runBlocking {
         val dir = Files.createTempDirectory("postprocess").toFile()
         val processor = OutputPostProcessor()

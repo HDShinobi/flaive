@@ -18,6 +18,16 @@ class AutoConvertMetadataTest {
         assertEquals("audio", original.readText())
         assertFalse(tagged.exists())
     }
+    @Test fun `M1 promotion failure preserves original and finished metadata output`() {
+        val original = temp.newFile("song.m4a").apply { writeText("original") }
+        val tagged = temp.newFile("tagged.m4a").apply { writeText("tagged") }
+        assertThrows(IOException::class.java) {
+            NonFlacMetadataEmbedder.runAndReplace(emptyList(), tagged.path, original.path,
+                mover = { _, _, _ -> throw IOException("injected move failure") }) { true }
+        }
+        assertEquals("original", original.readText())
+        assertEquals("tagged", tagged.readText())
+    }
     @Test fun `metadata success promotes tagged file`() {
         val original = temp.newFile("song.converting.m4a").apply { writeText("audio") }
         val tagged = temp.newFile("tagged.m4a").apply { writeText("tagged audio") }

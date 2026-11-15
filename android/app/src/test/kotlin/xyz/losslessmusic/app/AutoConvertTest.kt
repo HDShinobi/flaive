@@ -199,11 +199,15 @@ class AutoConvertTest {
             { "{}" }, { error("must skip") }, warning = { warnings.add(it) }))
         assertEquals("original", src.readText()); assertEquals(1, warnings.size)
     }
-    @Test fun `already exists skips even probe`() {
-        val src = temp.newFile("song.flac")
+    @Test fun `M5 request already_exists is ignored while output processor owns duplicate gate`() {
+        val src = temp.newFile("song.flac").apply { writeText("original") }
+        var probed = false
         assertEquals(src.path, AutoConvert.run(src.path,
             """{"auto_convert_downloads":true,"already_exists":true}""",
-            { error("must skip") }, { error("must skip") }))
+            { probed = true; """{"codec":"flac","bit_depth":16,"sample_rate":44100}""" },
+            { error("already satisfies caps") }))
+        assertTrue(probed)
+        assertEquals("original", src.readText())
     }
     @Test fun `AAC output uses mp4 muxer and selected bitrate`() {
         val a = AutoConvert.ffmpegArgs(caps.copy(format = "aac", bitrate = "192k"), "in", "out", 24, 96000)

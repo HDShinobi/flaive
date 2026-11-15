@@ -17,7 +17,7 @@ object FakeHiResGuard {
     // The monitor makes reservation and orphan recovery atomic with each other.
     private val activeBackups = ConcurrentHashMap.newKeySet<String>()
     private val log = Logger.getLogger("FakeHiResGuard")
-    data class Result(val path: String, val replaced: Boolean)
+    data class Result(val path: String, val replaced: Boolean, val redownloaded: Boolean = false)
 
     fun shouldCheck(path: String, alreadyExists: Boolean, bits: Int?, rate: Int?): Boolean =
         !alreadyExists && !path.startsWith("content://") &&
@@ -29,7 +29,7 @@ object FakeHiResGuard {
         check: (String, String) -> String, redownload: (String) -> JSONObject,
         isCancelled: () -> Boolean,
     ): Result {
-        val kept = Result(path, false)
+        var kept = Result(path, false)
         var backup: File? = null
         var directory: File? = null
         var replacement: File? = null
@@ -84,6 +84,9 @@ object FakeHiResGuard {
                     log.log(Level.WARNING, "Skipping unreadable output directory: $dir", error)
                 }
                 .map { it.canonicalPath }.toHashSet()
+            // The engine may index its output before verification rejects it,
+            // including when the callback subsequently throws during finalization.
+            kept = Result(path, false, redownloaded = true)
             val result = redownload(request.toString())
             val newPath = result.optString("file_path", "").trim()
             // already_exists belongs to the user and must never be cleaned up.
@@ -110,7 +113,7 @@ object FakeHiResGuard {
             // A cleanup error must not restore an original after it was deleted.
             if (!saved.delete()) throw IOException("Cannot retire verified backup: $saved")
             committed = true
-            return Result(newPath, true)
+            return Result(newPath, true, redownloaded = true)
         } catch (e: Exception) {
             log.log(Level.WARNING, "Keeping original after Hi-Res check/replacement failed: $path", e)
             return kept

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_dirs.dart';
+import '../services/app_log.dart';
 import 'extensions_provider.dart';
 
 /// SharedPreferences key holding the user-selected download directory (a real
@@ -107,13 +108,21 @@ class DownloadDirController extends Notifier<void> {
   /// Persists [path] as the custom download directory and re-wires the backend.
   Future<void> setDirectory(String path) async {
     final prefs = await SharedPreferences.getInstance();
-    final previous = await ref.read(downloadDirPathProvider);
-    if (previous != path && previous.startsWith('/')) {
-      final roots = {
-        previous,
-        ...previousDownloadDirs(prefs),
-      }.take(32).toList();
-      await prefs.setString(kDownloadPreviousDirsPrefKey, jsonEncode(roots));
+    try {
+      final previous = await ref.read(downloadDirPathProvider);
+      if (previous != path && previous.startsWith('/')) {
+        final roots = {
+          previous,
+          ...previousDownloadDirs(prefs),
+        }.take(32).toList();
+        await prefs.setString(kDownloadPreviousDirsPrefKey, jsonEncode(roots));
+      }
+    } catch (e) {
+      AppLog.instance.add(
+        LogLevel.warning,
+        'DownloadDirectory',
+        'Could not remember previous download root: $e',
+      );
     }
     await prefs.setString(kDownloadDirPrefKey, path);
     // downloadDirPathProvider caches its resolved Future, so invalidate it too

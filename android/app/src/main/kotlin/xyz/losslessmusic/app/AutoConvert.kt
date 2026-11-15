@@ -87,7 +87,6 @@ object AutoConvert {
         var cleanupStaging = true
         try {
             val t = target(requestJson) ?: return path
-            if (JSONObject(requestJson).optBoolean("already_exists", false)) return path
             if (path.startsWith("content://")) return path
             val source = File(path)
             val ext = source.extension.lowercase(Locale.ROOT)

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../models/installed_extension.dart';
 import '../services/backend_bridge.dart';
+import '../services/app_log.dart';
 
 class ExtensionSettingsSection extends StatefulWidget {
   const ExtensionSettingsSection({
@@ -68,6 +69,11 @@ class _ExtensionSettingsSectionState extends State<ExtensionSettingsSection> {
   }
 
   Future<void> _change(String key, Object? value) async {
+    final setting = widget.ext.settings.where((s) => s.key == key).firstOrNull;
+    if (!_stored.containsKey(key) &&
+        setting != null &&
+        value == setting.defaultValue)
+      return;
     try {
       await _save({key: value});
     } catch (_) {
@@ -80,7 +86,14 @@ class _ExtensionSettingsSectionState extends State<ExtensionSettingsSection> {
       context: context,
       builder: (_) => _SettingEditDialog(setting: setting, value: value),
     );
-    if (mounted && result != null) await _change(setting.key, result);
+    if (!mounted || result == null) return;
+    // An untouched empty field represents an absent user value, even when the
+    // manifest supplies a visible default hint.
+    if (!_stored.containsKey(setting.key) &&
+        setting.defaultValue != null &&
+        result == '')
+      return;
+    await _change(setting.key, result);
   }
 
   Future<void> _select(ExtensionSetting setting, Object? value) async {
@@ -129,7 +142,26 @@ class _ExtensionSettingsSectionState extends State<ExtensionSettingsSection> {
       final updates = payload['setting_updates'];
       if (updates is Map && updates.isNotEmpty) {
         try {
-          await _save(Map<String, dynamic>.from(updates));
+          final declared = {for (final s in widget.ext.settings) s.key: s};
+          final allowed = <String, dynamic>{};
+          for (final entry in updates.entries) {
+            final key = entry.key.toString();
+            final declaredSetting = declared[key];
+            if (key.startsWith('_') ||
+                declaredSetting == null ||
+                (declaredSetting.grantsNetwork &&
+                    (!_stored.containsKey(key) ||
+                        entry.value != _stored[key]))) {
+              AppLog.instance.add(
+                LogLevel.warning,
+                'ExtensionSettings',
+                'Dropped action setting update: $key',
+              );
+              continue;
+            }
+            allowed[key] = entry.value;
+          }
+          if (allowed.isNotEmpty) await _save(allowed);
         } catch (_) {
           _message(t.extSettingsSaveFailed);
           return;
@@ -139,7 +171,9 @@ class _ExtensionSettingsSectionState extends State<ExtensionSettingsSection> {
       final authUrl = payload['open_auth_url'];
       if (authUrl is String && authUrl.isNotEmpty) {
         final uri = Uri.tryParse(authUrl);
+        final scheme = uri?.scheme.toLowerCase();
         if (uri == null ||
+            (scheme != 'http' && scheme != 'https') ||
             !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
           _message(t.extAuthOpenFailed);
         }
@@ -202,7 +236,7 @@ class _ExtensionSettingsSectionState extends State<ExtensionSettingsSection> {
               } else if (setting.type == 'select') {
                 _select(setting, value);
               } else {
-                _edit(setting, value);
+                _edit(setting, _stored[setting.key]);
               }
             },
     );
@@ -264,7 +298,7 @@ class _SettingEditDialogState extends State<_SettingEditDialog> {
             ? const TextInputType.numberWithOptions(decimal: true, signed: true)
             : TextInputType.text,
         decoration: InputDecoration(
-          hintText: setting.description,
+          hintText: setting.defaultValue?.toString() ?? setting.description,
           errorText: _error,
         ),
       ),

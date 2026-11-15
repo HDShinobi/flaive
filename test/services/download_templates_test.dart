@@ -4,6 +4,12 @@ import 'package:lossless_music_download/services/download_paths.dart';
 import 'package:lossless_music_download/services/download_templates.dart';
 
 void main() {
+  test('I5 flat playlist basenames distinguish artists regardless of disc', () {
+    for (final mode in [FolderOrganization.none, FolderOrganization.playlist]) {
+      expect(basenameTemplateFor(mode), '{artist} - {title}');
+      expect(basenameTemplateFor(mode, discNumber: 2, totalDiscs: 2), '{artist} - {title}');
+    }
+  });
   test('playlist sanitization stays one visible segment and keeps emoji', () {
     expect(sanitizePlaylistFolder('a/b'), 'a b');
     expect(sanitizePlaylistFolder('..'), 'Playlist');
@@ -33,6 +39,7 @@ void main() {
       albumFolderTemplate: '{album}',
       rules: const FolderRules(createPlaylistFolder: true, separateSingles: true));
     expect(target.dir, '/music/Mix');
+    expect(target.template, '{artist} - {title}');
   });
 
   test('separate singles uses every upstream folder tree including Albums', () {

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import 'package:lossless_music_download/models/installed_extension.dart';
 import 'package:lossless_music_download/services/backend_bridge.dart';
+import 'package:lossless_music_download/services/app_log.dart';
 import 'package:lossless_music_download/widgets/extension_settings_section.dart';
 
 class _Bridge extends BackendBridge {
@@ -76,7 +77,11 @@ const _settings = <Map<String, dynamic>>[
   },
 ];
 
-Widget _app(_Bridge bridge, {String locale = 'en'}) => ProviderScope(
+Widget _app(
+  _Bridge bridge, {
+  String locale = 'en',
+  List<Map<String, dynamic>> settings = _settings,
+}) => ProviderScope(
   child: MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
@@ -86,7 +91,7 @@ Widget _app(_Bridge bridge, {String locale = 'en'}) => ProviderScope(
         child: ExtensionSettingsSection(
           ext: InstalledExtension.fromJson({
             'id': 'test',
-            'settings': _settings,
+            'settings': settings,
           }),
           bridge: bridge,
         ),
@@ -123,6 +128,152 @@ class _Extensions extends ExtensionsController {
 }
 
 void main() {
+  testWidgets('I1 secret network default stays a hint on untouched Save', (
+    tester,
+  ) async {
+    final b = _Bridge();
+    await tester.pumpWidget(
+      _app(
+        b,
+        settings: [
+          {..._settings.first, 'secret': true},
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Endpoint'));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.obscureText, isTrue);
+    expect(field.controller!.text, isEmpty);
+    expect(field.decoration!.hintText, 'https://default.example');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(b.saves, isEmpty);
+  });
+
+  testWidgets('I2 all forbidden updates are logged without saving or values', (
+    tester,
+  ) async {
+    AppLog.instance.clear();
+    final b = _Bridge()
+      ..result = {
+        'success': true,
+        'setting_updates': {
+          '_enabled': false,
+          'undeclared': 'private-value',
+          'customEndpoint': 'https://evil.example',
+        },
+      };
+    await tester.pumpWidget(_app(b));
+    await tester.pumpAndSettle();
+    await _action(tester);
+    expect(b.saves, isEmpty);
+    final messages = AppLog.instance.entries.map((e) => e.message).join('\n');
+    for (final key in ['_enabled', 'undeclared', 'customEndpoint']) {
+      expect(messages, contains(key));
+    }
+    expect(messages, isNot(contains('private-value')));
+    expect(messages, isNot(contains('https://evil.example')));
+  });
+
+  testWidgets('I1 untouched network default is only a hint and never saved', (
+    tester,
+  ) async {
+    final b = _Bridge();
+    await tester.pumpWidget(_app(b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Endpoint'));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller!.text, isEmpty);
+    expect(field.decoration!.hintText, 'https://default.example');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(b.saves, isEmpty);
+    expect(b.stored.containsKey('customEndpoint'), isFalse);
+  });
+
+  testWidgets('I1 submitting an absent default does not grant network', (
+    tester,
+  ) async {
+    final b = _Bridge();
+    await tester.pumpWidget(_app(b));
+    await tester.pumpAndSettle();
+    await _edit(tester, 'Endpoint', 'https://default.example');
+    expect(b.saves, isEmpty);
+  });
+
+  for (final key in ['_enabled', 'undeclared', 'customEndpoint']) {
+    testWidgets(
+      'I2 action drops forbidden update $key and keeps allowed update',
+      (tester) async {
+        final b = _Bridge()
+          ..result = {
+            'success': true,
+            'setting_updates': {
+              key: 'https://evil.example',
+              'api_key': 'allowed',
+            },
+          };
+        final before = Map.of(b.stored);
+        await tester.pumpWidget(_app(b));
+        await tester.pumpAndSettle();
+        await _action(tester);
+        expect(b.stored, {...before, 'api_key': 'allowed'});
+      },
+    );
+  }
+
+  testWidgets('I2 unchanged stored network value is allowed', (tester) async {
+    final b = _Bridge()..stored['customEndpoint'] = 'https://user.example';
+    b.result = {
+      'success': true,
+      'setting_updates': {
+        'customEndpoint': 'https://user.example',
+        'api_key': 'allowed',
+      },
+    };
+    await tester.pumpWidget(_app(b));
+    await tester.pumpAndSettle();
+    await _action(tester);
+    expect(b.saves.single['customEndpoint'], 'https://user.example');
+    expect(b.stored['api_key'], 'allowed');
+  });
+
+  for (final url in [
+    'spotiflac://login',
+    'mornye://login',
+    'tel:123',
+    'http://auth.example',
+    'https://auth.example',
+    'HTTPS://auth.example',
+  ]) {
+    testWidgets('I3 action auth scheme policy $url', (tester) async {
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      final calls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            return true;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      final b = _Bridge()..result = {'success': true, 'open_auth_url': url};
+      await tester.pumpWidget(_app(b));
+      await tester.pumpAndSettle();
+      await _action(tester);
+      if (['http', 'https'].contains(Uri.parse(url).scheme.toLowerCase())) {
+        expect(calls, hasLength(1));
+      } else {
+        expect(calls, isEmpty);
+        expect(find.text('Could not open sign-in URL'), findsOneWidget);
+      }
+    });
+  }
+
   for (final locale in ['en', 'vi']) {
     testWidgets('save merges into loaded map keeping _enabled ($locale)', (
       tester,

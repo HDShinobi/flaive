@@ -172,9 +172,13 @@ object NonFlacMetadataEmbedder {
     }
 
     internal fun moveOutput(from: File, to: File, atomic: Boolean) {
-        val options = if (atomic) arrayOf(StandardCopyOption.ATOMIC_MOVE,
-            StandardCopyOption.REPLACE_EXISTING) else arrayOf(StandardCopyOption.REPLACE_EXISTING)
-        Files.move(from.toPath(), to.toPath(), *options)
+        if (atomic) {
+            Files.move(from.toPath(), to.toPath(), StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING)
+        } else if (!from.renameTo(to)) {
+            // A filesystem rename never unlinks the destination before copying.
+            throw IOException("Cannot rename $from to $to")
+        }
     }
 
     internal fun replaceOutput(temp: File, original: File,
@@ -182,18 +186,14 @@ object NonFlacMetadataEmbedder {
         try {
             mover(temp, original, true)
         } catch (_: IOException) {
-            // Some Android 9 sdcardfs mounts reject atomic moves. Try their
-            // regular rename before falling back to a serialized copy.
-            try {
-                mover(temp, original, false)
-            } catch (_: IOException) {
-                temp.copyTo(original, overwrite = true)
-                temp.delete()
-            }
+            // Some Android sdcardfs mounts reject atomic moves. Try a rename
+            // only: copying with overwrite can destroy the original on failure.
+            mover(temp, original, false)
         }
     }
 
     internal fun runAndReplace(args: List<String>, tempOutput: String, originalPath: String,
+                               mover: (File, File, Boolean) -> Unit = ::moveOutput,
                                ffmpeg: (List<String>) -> Boolean = {
                                    ReturnCode.isSuccess(FFmpegKit.executeWithArguments(it.toTypedArray()).returnCode)
                                }) {
@@ -202,10 +202,13 @@ object NonFlacMetadataEmbedder {
             if (!ffmpeg(args) || !temp.isFile || temp.length() == 0L) {
                 throw IOException("Metadata FFmpeg failed or produced empty output")
             }
-            replaceOutput(temp, File(originalPath))
-        } finally {
+        } catch (e: Exception) {
+            // Promotion has not begun; the original is known intact.
             temp.delete()
+            throw e
         }
+        // On promotion failure retain the complete staged output for recovery.
+        replaceOutput(temp, File(originalPath), mover)
     }
 
     private fun embedOpus(opusPath: String, metadata: Map<String, String>, coverPath: String?) {

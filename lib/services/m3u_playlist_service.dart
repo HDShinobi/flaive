@@ -50,7 +50,11 @@ abstract final class M3uPlaylistService {
     }
     final directory = Directory(m3uDir);
     await directory.create(recursive: true);
-    final file = File('$m3uDir/${sanitizePlaylistFolder(playlistName)}.m3u8');
+    final name = sanitizePlaylistFolder(playlistName);
+    var file = File('$m3uDir/$name.m3u8');
+    for (var suffix = 2; await file.exists(); suffix++) {
+      file = File('$m3uDir/$name ($suffix).m3u8');
+    }
     await file.writeAsString(buffer.toString(), encoding: utf8, flush: true);
     return file.path;
   }

@@ -221,7 +221,9 @@ String basenameTemplateFor(
   int? discNumber,
   int? totalDiscs,
 }) {
-  if (mode == FolderOrganization.none) return '{artist} - {title}';
+  if (mode == FolderOrganization.none || mode == FolderOrganization.playlist) {
+    return '{artist} - {title}';
+  }
   final multiDisc =
       (totalDiscs ?? 0) > 1 ||
       ((totalDiscs ?? 0) <= 0 && (discNumber ?? 0) > 1);

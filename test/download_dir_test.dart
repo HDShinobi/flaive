@@ -26,6 +26,25 @@ class FakeBackendBridge extends BackendBridge {
 }
 
 void main() {
+  test('I4 directory change survives failed default resolution and rewires', () async {
+    SharedPreferences.setMockInitialValues({});
+    final fake = FakeBackendBridge();
+    final container = ProviderContainer(overrides: [
+      downloadDirPathProvider.overrideWith((ref) async {
+        final prefs = await SharedPreferences.getInstance();
+        return resolveDownloadDir(prefs, () async => throw StateError('default unavailable'));
+      }),
+      backendBridgeProvider.overrideWithValue(fake),
+    ]);
+    addTearDown(container.dispose);
+    await expectLater(container.read(downloadDirProvider.future), throwsStateError);
+    await container.read(downloadDirControllerProvider.notifier).setDirectory('/new');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(kDownloadDirPrefKey), '/new');
+    expect(await container.read(downloadDirProvider.future), '/new');
+    expect(fake.setDirCalls, ['/new']);
+    expect(fake.allowDirCalls, ['/new']);
+  });
   const testPath = '/tmp/test_dl';
 
   test('directory changes remember roots as bounded most recent JSON', () async {

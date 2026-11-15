@@ -34,6 +34,26 @@ class FakeHiResGuardTest {
                 } else first
             }, download, cancelled)
     }
+    @Test fun `M2 rejected different-path replacement reports redownload for reindex`() {
+        val replacement = File(temp.root, "cd.flac")
+        val result = run(equivalent = false, download = {
+            replacement.writeText("rejected CD")
+            success(replacement.path)
+        })
+        assertRestored(result)
+        assertTrue(result.redownloaded)
+        assertFalse(replacement.exists())
+    }
+    @Test fun `M2 attempted redownload exception still requires reindex`() {
+        val result = run(download = { throw IOException("download failure after indexing") })
+        assertRestored(result)
+        assertTrue(result.redownloaded)
+    }
+    @Test fun `M2 no redownload does not request reindex`() {
+        val result = run(first = verdict(fake = false), download = { error("must not download") })
+        assertRestored(result)
+        assertFalse(result.redownloaded)
+    }
     private fun assertRestored(result: FakeHiResGuard.Result) {
         assertEquals(original.path, result.path)
         assertFalse(result.replaced)
