@@ -8,6 +8,7 @@ import 'package:lossless_music_download/models/download_progress.dart';
 import 'package:lossless_music_download/models/download_request.dart';
 import 'package:lossless_music_download/models/track.dart';
 import 'package:lossless_music_download/providers/download_dir_provider.dart';
+import 'package:lossless_music_download/providers/download_options_provider.dart';
 import 'package:lossless_music_download/providers/download_history_provider.dart';
 import 'package:lossless_music_download/providers/download_queue_provider.dart';
 import 'package:lossless_music_download/providers/extensions_provider.dart';
@@ -97,6 +98,7 @@ class Worker extends NativeDownloadWorker {
   String? item;
   bool withPath = false;
   bool alreadyExists = false;
+  bool replacedFakeHiRes = false;
   String? error;
   int starts = 0;
   Map<String, dynamic>? lastRequest;
@@ -132,6 +134,7 @@ class Worker extends NativeDownloadWorker {
         'file_path': withPath ? path : null,
         'resolved_service': 'tidal',
         'already_exists': alreadyExists,
+        'replaced_fake_hires': replacedFakeHiRes,
       }),
     ],
   );
@@ -166,6 +169,23 @@ void main() {
         nativeDownloadWorkerProvider.overrideWithValue(worker),
     ],
   );
+  test('native fake hi-res replacement records CD quality and keeps queue intent', () async {
+    final path = '${dir.path}/song.flac';
+    await File(path).writeAsString('CD audio');
+    final worker = Worker(path)..withPath = true..replacedFakeHiRes = true;
+    container = setup(worker: worker);
+    await container.read(redownloadFakeHiResProvider.notifier).set(true);
+    await container.read(downloadQueueProvider.notifier).enqueue(song, quality: 'hires');
+    await waitFor(() async => (await db.list()).isNotEmpty);
+    final entry = container.read(downloadQueueProvider).single;
+    expect(entry.replacedFakeHiRes, true);
+    expect(entry.quality, 'hires');
+    expect(entry.copyWith(progress: 1).replacedFakeHiRes, true);
+    expect((await db.list()).single.quality, 'cd');
+    expect(worker.lastRequest?['redownload_fake_hires'], true);
+    expect(worker.lastRequest?['download_root'], dir.path);
+  });
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({
       'embed_metadata': false,

@@ -585,5 +585,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "downloadRedownloadFakeHiRes": "Re-download fake Hi-Res",
+  "downloadRedownloadFakeHiResSubtitle": "Off by default. Check Hi-Res downloads and replace only when every audio sample is preserved. Keep the original if verification or processing fails",
+  "queueReplacedFakeHiRes": "Replaced fake Hi-Res with CD quality"
 }

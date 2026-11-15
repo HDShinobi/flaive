@@ -5,6 +5,11 @@ import 'package:lossless_music_download/services/native_download_worker.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('snapshot replacement flag defaults false and reads true', () {
+    expect(NativeWorkerItemState.fromJson({}).replacedFakeHiRes, false);
+    expect(NativeWorkerItemState.fromJson({'replaced_fake_hires': true})
+        .replacedFakeHiRes, true);
+  });
   test('worker sends limits and network policy and exposes queue actions', () async {
     const channel = MethodChannel('worker-policy-test');
     final calls = <MethodCall>[];

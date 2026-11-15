@@ -1191,4 +1191,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String reorganizeError(String error) {
     return 'Không thể sắp xếp lại tệp: $error';
   }
+
+  @override
+  String get downloadRedownloadFakeHiRes => 'Tải lại bản Hi-Res giả';
+
+  @override
+  String get downloadRedownloadFakeHiResSubtitle =>
+      'Nếu file 24-bit thực chất là 16-bit, tự tải bản CD thay thế';
+
+  @override
+  String get queueReplacedFakeHiRes =>
+      'Đã thay bản Hi-Res giả bằng chất lượng CD';
 }

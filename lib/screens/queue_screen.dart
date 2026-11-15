@@ -78,6 +78,7 @@ class QueueScreen extends ConsumerWidget {
       eta: e.eta,
       error: e.error,
       alreadyInLibrary: e.alreadyInLibrary,
+      replacedFakeHiRes: e.replacedFakeHiRes,
       service: e.service,
       resolvedService: e.resolvedService,
     );

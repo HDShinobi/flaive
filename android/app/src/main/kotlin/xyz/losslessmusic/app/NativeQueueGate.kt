@@ -80,6 +80,7 @@ internal data class NativeWorkerItemState(
     var resolvedService: String? = null,
     var filePath: String? = null,
     var alreadyExists: Boolean = false,
+    var replacedFakeHiRes: Boolean = false,
 ) {
     fun requeueOnStop() {
         if (status != "downloading" && status != "finalizing") return

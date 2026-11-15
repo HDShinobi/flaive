@@ -4,6 +4,13 @@ import 'package:lossless_music_download/models/metadata_separators.dart';
 
 void main() {
   group('DownloadRequest.toJson', () {
+    test('fake hi-res redownload defaults off and serializes opt in', () {
+      expect(const DownloadRequest(trackName: 'S', artistName: 'A',
+        outputDir: '/dl').toJson()['redownload_fake_hires'], false);
+      expect(const DownloadRequest(trackName: 'S', artistName: 'A',
+        outputDir: '/dl', redownloadFakeHiRes: true)
+        .toJson()['redownload_fake_hires'], true);
+    });
     test('serializes custom tag mode and all four separators', () {
       final json = const DownloadRequest(trackName: 'S', artistName: 'A',
         outputDir: '/dl', filenameFormat: '{title}', artistTagMode: 'split_vorbis',

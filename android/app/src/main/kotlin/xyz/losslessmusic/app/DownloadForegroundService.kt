@@ -328,6 +328,10 @@ class DownloadForegroundService : Service() {
     }
 
     private suspend fun runWorker(requests: List<WorkerRequest>) {
+        // Recover once, before admitting any downloads that could overwrite an orphan.
+        requests.mapNotNull { request ->
+            runCatching { fakeHiResBackupRoot(JSONObject(request.requestJson)).canonicalFile }.getOrNull()
+        }.distinct().forEach { FakeHiResGuard.recoverOrphans(it) }
         gate.runAll(requests,
             providerKey = { request ->
                 val payload = try { JSONObject(request.requestJson) } catch (_: Exception) { JSONObject() }
@@ -401,40 +405,86 @@ class DownloadForegroundService : Service() {
         val winning = result.optString("service", "").ifEmpty { null }
         updateItem(request.itemId) { it.resolvedService = winning }
         writeSnapshot(isRunning = true)
-        // Amazon's lossless tier delivers an *encrypted* MP4 plus the key in
-        // the result; the engine only forwards it, so decrypt (and unwrap the
-        // FLAC out of the MP4) here, before the sidecar and tagging steps see
-        // the path. Without this the file is ciphertext that merely labels
-        // itself as hi-res FLAC.
-        // An existing destination is the user's file: never decrypt, re-tag or
-        // add sidecars to it.
         val alreadyExists = result.optBoolean("already_exists", false)
-        val filePath = if (alreadyExists) result.optString("file_path", "") else outputPostProcessor.run(result) {
-            val finalizedPath = try {
-                Mp4FlacUnwrapper.finalize(result.toString(), request.requestJson)
-            } catch (e: Exception) {
-                android.util.Log.w("DownloadForegroundService", "MP4 finalize failed: ${e.message}")
-                result.optString("file_path", "")
-            }
-            LrcSidecarWriter.maybeWrite(finalizedPath, request.requestJson)
-            if (finalizedPath.isNotEmpty() && NonFlacMetadataEmbedder.isEmbeddable(finalizedPath)) {
+        val itemContext = currentCoroutineContext()
+        var replacedFakeHiRes = false
+        val filePath = outputPostProcessor.run(result) {
+            val finalizedPath = finalizeDownloaded(result, request.requestJson)
+            val payload = JSONObject(request.requestJson)
+            val guarded = if (payload.optBoolean("redownload_fake_hires", false)) {
                 try {
-                    NonFlacMetadataEmbedder.embed(applicationContext, finalizedPath, request.requestJson)
+                    val quality = JSONObject(Engines.current.getAudioQuality(finalizedPath))
+                    if (FakeHiResGuard.shouldCheck(finalizedPath, alreadyExists,
+                            quality.optInt("bit_depth", 0), quality.optInt("sample_rate", 0))) {
+                        FakeHiResGuard.run(request.itemId, finalizedPath, request.requestJson,
+                            fakeHiResBackupRoot(payload),
+                            check = { path, options -> Engines.current.checkHiResAuthenticity(path, options) },
+                            redownload = { json ->
+                                val replacement = JSONObject(Engines.current.downloadByStrategy(json))
+                                if (replacement.optBoolean("success", false) &&
+                                    !replacement.optBoolean("already_exists", false)) {
+                                    // Do not let a malformed result finalize over any saved original.
+                                    val returnedPath = replacement.optString("file_path", "")
+                                    require(!File(returnedPath).canonicalFile.toPath().startsWith(
+                                        fakeHiResBackupRoot(payload).canonicalFile.toPath())) {
+                                        "Replacement points inside Hi-Res backups"
+                                    }
+                                    replacement.put("file_path", finalizeDownloaded(replacement, json))
+                                }
+                                replacement
+                            },
+                            isCancelled = { workerStopped || !itemContext.isActive })
+                    } else FakeHiResGuard.Result(finalizedPath, false)
                 } catch (e: Exception) {
-                    android.util.Log.w("DownloadForegroundService", "Non-FLAC metadata embed failed: ${e.message}")
+                    android.util.Log.w("DownloadForegroundService", "Hi-Res guard skipped", e)
+                    FakeHiResGuard.Result(finalizedPath, false)
+                }
+            } else FakeHiResGuard.Result(finalizedPath, false)
+            replacedFakeHiRes = guarded.replaced
+            if (guarded.replaced && guarded.path != finalizedPath) {
+                try {
+                    val isrc = payload.optString("isrc", "")
+                    if (isrc.isNotEmpty()) Engines.current.reindexIsrc(
+                        payload.optString("output_dir", ""), isrc, guarded.path)
+                } catch (e: Exception) {
+                    android.util.Log.w("DownloadForegroundService", "Replacement ISRC reindex failed", e)
                 }
             }
-            finalizedPath
+            guarded.path
         }
-        // FLAC needs no extra step -- the engine already tagged it natively.
 
         currentCoroutineContext().ensureActive()
         updateItem(request.itemId) {
             it.status = "done"; it.progress = 1.0; it.filePath = filePath
             it.alreadyExists = alreadyExists
+            it.replacedFakeHiRes = replacedFakeHiRes
         }
         writeSnapshot(isRunning = true)
     }
+
+    // Both attempts must decrypt/unwrap Amazon output before sidecars and tags.
+    private fun finalizeDownloaded(result: JSONObject, requestJson: String): String {
+        if (result.optBoolean("already_exists", false)) return result.optString("file_path", "")
+        val finalizedPath = try {
+            Mp4FlacUnwrapper.finalize(result.toString(), requestJson)
+        } catch (e: Exception) {
+            android.util.Log.w("DownloadForegroundService", "MP4 finalize failed: ${e.message}")
+            result.optString("file_path", "")
+        }
+        LrcSidecarWriter.maybeWrite(finalizedPath, requestJson)
+        if (finalizedPath.isNotEmpty() && NonFlacMetadataEmbedder.isEmbeddable(finalizedPath)) {
+            try {
+                NonFlacMetadataEmbedder.embed(applicationContext, finalizedPath, requestJson)
+            } catch (e: Exception) {
+                android.util.Log.w("DownloadForegroundService", "Non-FLAC metadata embed failed: ${e.message}")
+            }
+        }
+        return finalizedPath
+    }
+
+    private fun fakeHiResBackupRoot(payload: JSONObject): File = File(
+        payload.optString("download_root", "").ifBlank { payload.getString("output_dir") },
+        ".fake-hires")
 
     private fun refreshQueueState() {
         if (workerStopped) return
@@ -569,6 +619,7 @@ class DownloadForegroundService : Service() {
                         .put("bytes_received", item.bytesReceived)
                         .put("bytes_total", item.bytesTotal)
                         .put("already_exists", item.alreadyExists)
+                        .put("replaced_fake_hires", item.replacedFakeHiRes)
                         .apply { item.error?.let { put("error", it) } }
                         .apply { if (item.retryAfterSeconds > 0) put("retry_after_seconds", item.retryAfterSeconds) }
                         .apply { item.service?.let { put("service", it) } }

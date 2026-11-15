@@ -137,6 +137,14 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('QueueItem', () {
+    testWidgets('done replacement shows CD replacement note', (tester) async {
+      await _pumpView(tester, const QueueItemView(
+        progress: DownloadProgress(itemId: 'replacement', status: 'done',
+          progress: 1, bytesReceived: 100),
+        track: track, replacedFakeHiRes: true,
+      ), _FakeBridge());
+      expect(find.text('Replaced fake Hi-Res with CD quality'), findsOneWidget);
+    });
     testWidgets('same resolved destination hides Download anyway', (
       tester,
     ) async {

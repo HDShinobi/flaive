@@ -47,6 +47,7 @@ final libraryProvider = FutureProvider<List<LibraryEntry>>((ref) async {
   await cleanupReEnrichOrphans(dir, candidates: scanned
       .map((item) => item['filePath'] as String? ?? ''));
   final items = scanned.where((item) =>
+    !(item['filePath'] as String? ?? '').contains('/.fake-hires/') &&
     !isReEnrichTemporary(item['filePath'] as String? ?? ''));
 
   final entries = items.map((item) {

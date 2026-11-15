@@ -92,6 +92,10 @@ final autoFallbackProvider = NotifierProvider<_BoolPrefNotifier, bool>(
   () => _BoolPrefNotifier('auto_fallback', true),
 );
 
+final redownloadFakeHiResProvider = NotifierProvider<_BoolPrefNotifier, bool>(
+  () => _BoolPrefNotifier('redownload_fake_hires', false),
+);
+
 final writeLrcSidecarProvider = NotifierProvider<_BoolPrefNotifier, bool>(
   () => _BoolPrefNotifier('write_lrc_sidecar', false),
 );

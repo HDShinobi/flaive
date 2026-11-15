@@ -67,6 +67,7 @@ class DownloadEntry {
 
   final String? filePath;
   final bool alreadyInLibrary;
+  final bool replacedFakeHiRes;
   final bool bypassDuplicateCheck;
 
   const DownloadEntry({
@@ -85,6 +86,7 @@ class DownloadEntry {
     this.resolvedService,
     this.filePath,
     this.alreadyInLibrary = false,
+    this.replacedFakeHiRes = false,
     this.bypassDuplicateCheck = false,
   });
 
@@ -100,6 +102,7 @@ class DownloadEntry {
     String? resolvedService,
     String? filePath,
     bool? alreadyInLibrary,
+    bool? replacedFakeHiRes,
   }) {
     return DownloadEntry(
       track: track,
@@ -117,6 +120,7 @@ class DownloadEntry {
       resolvedService: resolvedService ?? this.resolvedService,
       filePath: filePath ?? this.filePath,
       alreadyInLibrary: alreadyInLibrary ?? this.alreadyInLibrary,
+      replacedFakeHiRes: replacedFakeHiRes ?? this.replacedFakeHiRes,
       bypassDuplicateCheck: bypassDuplicateCheck,
     );
   }
@@ -310,6 +314,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         ref.read(embedLyricsProvider.notifier).ready,
         ref.read(autoFallbackProvider.notifier).ready,
         ref.read(writeLrcSidecarProvider.notifier).ready,
+        ref.read(redownloadFakeHiResProvider.notifier).ready,
         ref.read(simultaneousDownloadsProvider.notifier).ready,
         ref.read(wifiOnlyProvider.notifier).ready,
       ]);
@@ -391,7 +396,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
         await db.upsert(HistoryEntry(id: entry.itemId, track: entry.track,
           service: service, filePath: path,
           fileSize: stat.type == FileSystemEntityType.file ? stat.size : null,
-          quality: entry.quality, downloadedAt: DateTime.now()));
+          quality: entry.replacedFakeHiRes ? 'cd' : entry.quality, downloadedAt: DateTime.now()));
         _recordedHistory[entry.itemId] = fingerprint;
         if (ref.mounted) ref.read(historyRevisionProvider.notifier).changed();
       } catch (e) {
@@ -516,10 +521,12 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       artistTagMode: ref.read(artistTagModeProvider),
       metadataSeparators: ref.read(metadataSeparatorsProvider),
       writeLrcSidecar: ref.read(writeLrcSidecarProvider),
+      redownloadFakeHiRes: ref.read(redownloadFakeHiResProvider),
     );
     final provider = (ref.read(extensionsProvider).value ?? const <InstalledExtension>[])
         .where((e) => e.id == resolvedService).firstOrNull;
     return {...req.toJson(),
+      'download_root': dir,
       if (entry.bypassDuplicateCheck) 'bypass_duplicate_check': true,
       'network_concurrency_limit': provider?.maxConcurrentDownloads ?? 3};
   }
@@ -683,6 +690,7 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
       verificationService: item.service,
       resolvedService: item.resolvedService,
       filePath: existingPath ?? item.filePath,
+      replacedFakeHiRes: item.replacedFakeHiRes,
       alreadyInLibrary: existingPath != null ||
           (item.status == 'done' && item.alreadyExists) || entry.alreadyInLibrary,
     );
@@ -692,7 +700,8 @@ class DownloadQueueController extends Notifier<List<DownloadEntry>> {
 
   // The original single-item Dart download path -- now the fallback used
   // for non-Android platforms, items the native worker's gate rejects, and
-  // runs whose native snapshot stalls.
+  // runs whose native snapshot stalls. This Dart fallback does not run the
+  // fake Hi-Res auto-check or CD redownload (native worker only).
   Future<void> _runDartFallback(DownloadEntry next,
       {bool historyChecked = false}) async {
     if (!ref.mounted || !state.any((e) => e.itemId == next.itemId &&

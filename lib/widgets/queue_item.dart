@@ -70,7 +70,9 @@ class QueueItem extends ConsumerWidget {
       case _ItemState.done:
         statusLine = view.alreadyInLibrary
             ? t.queueAlreadyInLibrary
-            : t.queueStatusDone;
+            : view.replacedFakeHiRes
+                ? t.queueReplacedFakeHiRes
+                : t.queueStatusDone;
       case _ItemState.unknown:
         statusLine = item.status;
     }

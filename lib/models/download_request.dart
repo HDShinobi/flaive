@@ -7,7 +7,7 @@ class DownloadRequest {
       filenameFormat;
   final int? durationMs, trackNumber, discNumber, totalTracks, totalDiscs;
   final bool useExtensions, useFallback, embedMetadata, embedMaxQualityCover,
-      embedLyrics, writeLrcSidecar;
+      embedLyrics, writeLrcSidecar, redownloadFakeHiRes;
 
   /// Tells the engine/extension we want a container we can read as lossless.
   /// Set when the picked quality is FLAC and the source is known to deliver it
@@ -46,6 +46,7 @@ class DownloadRequest {
     this.embedMaxQualityCover = true,
     this.embedLyrics = true,
     this.writeLrcSidecar = false,
+    this.redownloadFakeHiRes = false,
     this.requiresContainerConversion = false,
     this.genre,
     this.label,
@@ -105,6 +106,7 @@ class DownloadRequest {
         'embed_max_quality_cover': embedMaxQualityCover,
         'embed_lyrics': embedLyrics,
         'write_lrc_sidecar': writeLrcSidecar,
+        'redownload_fake_hires': redownloadFakeHiRes,
         'artist_tag_mode': artistTagMode,
         if (!metadataSeparators.isDefault)
           'metadata_separators': metadataSeparators.toJson(),

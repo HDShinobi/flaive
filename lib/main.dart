@@ -21,6 +21,7 @@ void main() async {
   await container.read(onboardingSeenProvider.notifier).load();
   await container.read(aggregatorUrlProvider.notifier).load();
   await container.read(askBeforeDownloadProvider.notifier).load();
+  await container.read(redownloadFakeHiResProvider.notifier).ready;
   // Best-effort: push the persisted fallback pool to native so the download
   // engine starts in sync with the UI (pushCurrent already swallows bridge
   // errors internally; failures must not block app boot).

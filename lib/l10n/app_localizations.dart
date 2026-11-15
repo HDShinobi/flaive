@@ -2275,6 +2275,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not reorganize files: {error}'**
   String reorganizeError(String error);
+
+  /// No description provided for @downloadRedownloadFakeHiRes.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-download fake Hi-Res'**
+  String get downloadRedownloadFakeHiRes;
+
+  /// No description provided for @downloadRedownloadFakeHiResSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off by default. Check Hi-Res downloads and replace only when every audio sample is preserved. Keep the original if verification or processing fails'**
+  String get downloadRedownloadFakeHiResSubtitle;
+
+  /// No description provided for @queueReplacedFakeHiRes.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced fake Hi-Res with CD quality'**
+  String get queueReplacedFakeHiRes;
 }
 
 class _AppLocalizationsDelegate

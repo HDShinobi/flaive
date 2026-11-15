@@ -1198,4 +1198,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String reorganizeError(String error) {
     return 'Could not reorganize files: $error';
   }
+
+  @override
+  String get downloadRedownloadFakeHiRes => 'Re-download fake Hi-Res';
+
+  @override
+  String get downloadRedownloadFakeHiResSubtitle =>
+      'Off by default. Check Hi-Res downloads and replace only when every audio sample is preserved. Keep the original if verification or processing fails';
+
+  @override
+  String get queueReplacedFakeHiRes => 'Replaced fake Hi-Res with CD quality';
 }

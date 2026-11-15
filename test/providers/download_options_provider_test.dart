@@ -4,6 +4,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lossless_music_download/providers/download_options_provider.dart';
 
 void main() {
+  test('fake hi-res preference defaults off and persists opt in', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    expect(c.read(redownloadFakeHiResProvider), false);
+    await c.read(redownloadFakeHiResProvider.notifier).set(true);
+    c.dispose();
+    final restored = ProviderContainer();
+    addTearDown(restored.dispose);
+    await restored.read(redownloadFakeHiResProvider.notifier).ready;
+    expect(restored.read(redownloadFakeHiResProvider), true);
+    expect((await SharedPreferences.getInstance()).getBool('redownload_fake_hires'), true);
+  });
   test('worker settings default to sequential and any network; persist and clamp', () async {
     SharedPreferences.setMockInitialValues({});
     final c = ProviderContainer();

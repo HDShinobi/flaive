@@ -11,6 +11,7 @@ class QueueItemView {
   final Duration? eta;
   final String? error;
   final bool alreadyInLibrary;
+  final bool replacedFakeHiRes;
 
   /// Download intent (originally requested provider) and the provider that
   /// actually delivered the file. Set by the queue screen from
@@ -27,6 +28,7 @@ class QueueItemView {
     this.eta,
     this.error,
     this.alreadyInLibrary = false,
+    this.replacedFakeHiRes = false,
     this.service,
     this.resolvedService,
   });

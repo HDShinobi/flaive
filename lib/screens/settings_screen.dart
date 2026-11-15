@@ -284,6 +284,14 @@ class SettingsScreen extends ConsumerWidget {
 
           const Divider(height: 1),
 
+          SwitchListTile(
+            secondary: const Icon(Icons.high_quality_outlined),
+            title: Text(t.downloadRedownloadFakeHiRes),
+            subtitle: Text(t.downloadRedownloadFakeHiResSubtitle),
+            value: ref.watch(redownloadFakeHiResProvider),
+            onChanged: ref.read(redownloadFakeHiResProvider.notifier).set,
+          ),
+
           // Ask before download
           SwitchListTile(
             secondary: const Icon(Icons.tune_outlined),
