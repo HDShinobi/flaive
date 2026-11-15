@@ -1248,4 +1248,16 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get extAuthOpenFailed => 'Không thể mở liên kết đăng nhập';
+
+  @override
+  String get audioAnalysisSaveSpectrogram => 'Lưu ảnh phổ âm thanh';
+
+  @override
+  String audioAnalysisSpectrogramSaved(String fileName) {
+    return 'Đã lưu ảnh phổ âm thanh vào $fileName';
+  }
+
+  @override
+  String get audioAnalysisSpectrogramSaveFailed =>
+      'Không thể lưu ảnh phổ âm thanh';
 }

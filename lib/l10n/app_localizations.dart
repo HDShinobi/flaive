@@ -2383,6 +2383,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open sign-in URL'**
   String get extAuthOpenFailed;
+
+  /// No description provided for @audioAnalysisSaveSpectrogram.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Spectrogram'**
+  String get audioAnalysisSaveSpectrogram;
+
+  /// No description provided for @audioAnalysisSpectrogramSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Spectrogram saved to {fileName}'**
+  String audioAnalysisSpectrogramSaved(String fileName);
+
+  /// No description provided for @audioAnalysisSpectrogramSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save spectrogram'**
+  String get audioAnalysisSpectrogramSaveFailed;
 }
 
 class _AppLocalizationsDelegate

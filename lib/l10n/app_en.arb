@@ -603,5 +603,15 @@
   "extSettingRequiredEmpty": "Required value is empty",
   "extSettingInvalidNumber": "Enter a valid number",
   "extActionFailed": "Extension action failed",
-  "extAuthOpenFailed": "Could not open sign-in URL"
+  "extAuthOpenFailed": "Could not open sign-in URL",
+  "audioAnalysisSaveSpectrogram": "Save Spectrogram",
+  "audioAnalysisSpectrogramSaved": "Spectrogram saved to {fileName}",
+  "@audioAnalysisSpectrogramSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "audioAnalysisSpectrogramSaveFailed": "Could not save spectrogram"
 }

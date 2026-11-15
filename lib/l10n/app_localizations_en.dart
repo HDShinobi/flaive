@@ -1254,4 +1254,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extAuthOpenFailed => 'Could not open sign-in URL';
+
+  @override
+  String get audioAnalysisSaveSpectrogram => 'Save Spectrogram';
+
+  @override
+  String audioAnalysisSpectrogramSaved(String fileName) {
+    return 'Spectrogram saved to $fileName';
+  }
+
+  @override
+  String get audioAnalysisSpectrogramSaveFailed => 'Could not save spectrogram';
 }

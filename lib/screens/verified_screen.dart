@@ -278,6 +278,9 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
           // Real spectral analysis (decode → FFT → spectrogram + cutoff).
           AudioAnalysisCard(
             filePath: entry.path,
+            exportName: entry.artistName?.trim().isNotEmpty == true
+                ? '${entry.artistName} - ${entry.title ?? _displayName}'
+                : entry.title ?? _displayName,
             onAnalyzed: (data) {
               if (mounted) setState(() => _analysis = data);
             },

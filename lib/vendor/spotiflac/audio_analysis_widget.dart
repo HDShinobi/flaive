@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+// LOCAL ADDITION (see SYNC.md): PNG export and system save dialog.
+import 'package:file_picker/file_picker.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:ffmpeg_kit_flutter_new_full/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_full/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_new_full/ffprobe_kit.dart';
@@ -15,6 +18,9 @@ import 'settings_group.dart';
 import 'package:path_provider/path_provider.dart';
 import 'compat_l10n.dart';
 import 'compat_platform_bridge.dart';
+
+// LOCAL ADDITION (see SYNC.md).
+part 'audio_analysis_spectrogram_export.dart';
 
 class AudioAnalysisData {
   static const cacheVersion = 4;
@@ -185,7 +191,15 @@ class AudioAnalysisCard extends StatefulWidget {
   /// null preserves upstream behaviour. See SYNC.md.
   final void Function(AudioAnalysisData data)? onAnalyzed;
 
-  const AudioAnalysisCard({super.key, required this.filePath, this.onAnalyzed});
+  // LOCAL ADDITION (see SYNC.md): preferred track name for PNG export.
+  final String? exportName;
+
+  const AudioAnalysisCard({
+    super.key,
+    required this.filePath,
+    this.onAnalyzed,
+    this.exportName,
+  });
 
   @override
   State<AudioAnalysisCard> createState() => _AudioAnalysisCardState();
@@ -197,6 +211,7 @@ class _AudioAnalysisCardState extends State<AudioAnalysisCard> {
   bool _checkingCache = true;
   String? _error;
   ui.Image? _spectrogramImage;
+  bool _savingSpectrogram = false; // LOCAL ADDITION (see SYNC.md)
 
   static const _supportedExtensions = {
     '.flac',
@@ -319,6 +334,51 @@ class _AudioAnalysisCardState extends State<AudioAnalysisCard> {
           _analyzing = false;
         });
       }
+    }
+  }
+
+  // LOCAL ADDITION (see SYNC.md): save the currently displayed mixed plot.
+  Future<void> _saveSpectrogram() async {
+    final data = _data;
+    final image = _spectrogramImage;
+    if (data == null || image == null || _savingSpectrogram || _analyzing) return;
+    final l10n = AppLocalizations.of(context);
+    final baseName = audioSpectrogramExportBaseName(
+      widget.filePath,
+      exportName: widget.exportName,
+    );
+    final fileName = '${baseName}_spectrogram.png';
+    setState(() => _savingSpectrogram = true);
+    try {
+      final bytes = await renderAudioSpectrogramPng(
+        spectrogram: image,
+        title: baseName,
+        sampleRate: data.sampleRate,
+        duration: data.spectrum?.duration ?? data.duration,
+      );
+      if (!mounted) return;
+      final saved = await FilePicker.platform.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+        type: FileType.custom,
+        allowedExtensions: ['png'],
+      );
+      if (saved == null || !mounted) return;
+      final savedName = saved.split(RegExp(r'[/\\]')).last;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.audioAnalysisSpectrogramSaved(
+            savedName.isEmpty ? fileName : savedName,
+          )),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.audioAnalysisSpectrogramSaveFailed)),
+      );
+    } finally {
+      if (mounted) setState(() => _savingSpectrogram = false);
     }
   }
 
@@ -1021,6 +1081,8 @@ class _AudioAnalysisCardState extends State<AudioAnalysisCard> {
             sampleRate: data.sampleRate,
             maxFreq: data.spectrum?.maxFreq ?? data.sampleRate / 2,
             duration: data.spectrum?.duration ?? data.duration,
+            // LOCAL ADDITION (see SYNC.md). No channel selector in this fork.
+            onSave: _savingSpectrogram || _analyzing ? null : _saveSpectrogram,
           ),
         ],
       ],
@@ -1610,12 +1672,14 @@ class _SpectrogramView extends StatelessWidget {
   final int sampleRate;
   final double maxFreq;
   final double duration;
+  final VoidCallback? onSave; // LOCAL ADDITION (see SYNC.md)
 
   const _SpectrogramView({
     required this.image,
     required this.sampleRate,
     required this.maxFreq,
     required this.duration,
+    required this.onSave, // LOCAL ADDITION (see SYNC.md)
   });
 
   @override
@@ -1629,6 +1693,17 @@ class _SpectrogramView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // LOCAL ADDITION (see SYNC.md): system PNG save dialog.
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: IconButton(
+              key: const ValueKey('audio-analysis-save-spectrogram'),
+              icon: const Icon(Icons.download_outlined, size: 20),
+              tooltip: AppLocalizations.of(context).audioAnalysisSaveSpectrogram,
+              color: labelColor,
+              onPressed: onSave,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 10, 10, 4),
             child: LayoutBuilder(

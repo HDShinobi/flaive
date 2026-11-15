@@ -603,5 +603,15 @@
   "extSettingRequiredEmpty": "Giá trị bắt buộc đang trống",
   "extSettingInvalidNumber": "Nhập số hợp lệ",
   "extActionFailed": "Thao tác tiện ích thất bại",
-  "extAuthOpenFailed": "Không thể mở liên kết đăng nhập"
+  "extAuthOpenFailed": "Không thể mở liên kết đăng nhập",
+  "audioAnalysisSaveSpectrogram": "Lưu ảnh phổ âm thanh",
+  "audioAnalysisSpectrogramSaved": "Đã lưu ảnh phổ âm thanh vào {fileName}",
+  "@audioAnalysisSpectrogramSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "audioAnalysisSpectrogramSaveFailed": "Không thể lưu ảnh phổ âm thanh"
 }

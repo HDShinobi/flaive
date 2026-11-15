@@ -58,6 +58,8 @@ package:spotiflac_android/services/platform_bridge.dart    -> compat_platform_br
 - Imports: `ffmpeg_kit_flutter_new_audio` → `ffmpeg_kit_flutter_new_full` (we bundle the full variant).
 - `AudioAnalysisCard`: added optional `onAnalyzed(AudioAnalysisData)` callback, fired where `_data` is set (cache hit + fresh run), so VerifiedScreen can derive a conservative lossless verdict. Search `LOCAL ADDITION`.
 
+- `AudioAnalysisCard`: optional `exportName`, PNG Save button, saving guard and picker feedback. `audio_analysis_spectrogram_export.dart` ports Mornye `0afdacae` filename sanitizing and renderer as a part, reusing our painter/legend. Renderer clones/disposes its image handle and accepts optional `duration` for the real time axis. New export strings use generated ARB localizations. This fork has no channel selector; export is the displayed mixed plot. Search `LOCAL ADDITION`.
+
 ## replaygain_service.dart / convert_service.dart (adapted, not verbatim)
 - replaygain_service.dart: ports SpotiFLAC's ReplayGainService.applyToFile +
   the scanReplayGain() routine from ffmpeg_service.dart (EBU R128, -18 LUFS
