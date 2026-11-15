@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
+import '../utils/service_track_link.dart';
 import '../models/home_feed.dart';
 import '../models/search_entities.dart';
 import '../models/track.dart';
@@ -433,6 +434,7 @@ class _SearchBody extends ConsumerWidget {
           for (final track in results.tracks) {
             children.add(TrackTile(
               track: track,
+              onCopyLink: () => copyServiceTrackLink(context, track),
               downloaded: downloaded.contains(historyLookupKey(track)),
               qualityHint: track.qualityBadge,
               selectionMode: selectionMode,

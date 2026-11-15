@@ -2515,6 +2515,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not export M3U8'**
   String get playlistExportFailed;
+
+  /// No description provided for @copyServiceLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {service} link'**
+  String copyServiceLink(String service);
+
+  /// No description provided for @copiedServiceLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {service} link'**
+  String copiedServiceLink(String service);
+
+  /// No description provided for @historyFindMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Find moved downloads'**
+  String get historyFindMoved;
+
+  /// No description provided for @historyFindMovedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Find files moved with the download folder. Folder layout and filenames must be unchanged.'**
+  String get historyFindMovedDescription;
+
+  /// No description provided for @historyFindMovedResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Relinked {relinked}; still missing: {missing}.'**
+  String historyFindMovedResult(int relinked, int missing);
 }
 
 class _AppLocalizationsDelegate

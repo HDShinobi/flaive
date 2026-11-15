@@ -283,6 +283,67 @@ class HistoryDatabase {
       await (await database).update('history', {'file_path': target},
         where: 'id = ? AND file_path = ?', whereArgs: [id, expected]) == 1;
 
+  /// Relinks whole-folder moves only: folder layout and filename must match.
+  /// Pages by immutable id so path updates do not change pagination.
+  Future<({int relinked, int missing})> findMoved({
+    required String currentRoot,
+    required List<String> previousRoots,
+  }) async {
+    final db = await database;
+    final roots = {currentRoot, ...previousRoots}
+        .where((root) => root.startsWith('/')).toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    var relinked = 0;
+    var missing = 0;
+    String? after;
+    while (true) {
+      final rows = await db.query(
+        'history',
+        columns: ['id', 'file_path'],
+        where: after == null ? null : 'id > ?',
+        whereArgs: after == null ? null : [after],
+        orderBy: 'id',
+        limit: 256,
+      );
+      if (rows.isEmpty) break;
+      for (final row in rows) {
+        final source = row['file_path'] as String;
+        if (await _existingPath(source) != null) continue;
+        var recovered = false;
+        if (source.startsWith('/') && currentRoot.startsWith('/')) {
+          for (final root in roots) {
+            // Android roots are absolute POSIX paths. Require a segment
+            // boundary before taking the suffix; never infer by basename.
+            final prefix = "${root.replaceFirst(RegExp(r'/+$'), '')}/";
+            if (!source.startsWith(prefix)) continue;
+            final relative = source.substring(prefix.length);
+            if (relative.isEmpty || relative.startsWith('/') ||
+                relative.split('/').any(
+                  (part) => part == '..' || part.contains('\u0000'),
+                )) {
+              continue;
+            }
+            final target = await _existingPath(
+              "${currentRoot.replaceFirst(RegExp(r'/+$'), '')}/$relative",
+            );
+            if (target == null) continue;
+            // Do not replace an old file that reappeared during the search.
+            if (await _existingPath(source) != null) {
+              recovered = true;
+              break;
+            }
+            recovered = await updateFilePath(row['id'] as String, source, target);
+            if (recovered) relinked++;
+            break;
+          }
+        }
+        if (!recovered) missing++;
+      }
+      after = rows.last['id'] as String;
+    }
+    return (relinked: relinked, missing: missing);
+  }
+
   Future<void> close() async {
     final opening = _opening;
     _opening = null;

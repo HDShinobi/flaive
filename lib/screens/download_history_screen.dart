@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../providers/download_dir_provider.dart';
+import '../utils/service_track_link.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/download_history_provider.dart';
@@ -17,6 +21,42 @@ class DownloadHistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _DownloadHistoryScreenState extends ConsumerState<DownloadHistoryScreen> {
+  bool _findingMoved = false;
+
+  Future<void> _findMoved() async {
+    if (_findingMoved) return;
+    setState(() => _findingMoved = true);
+    final t = AppLocalizations.of(context);
+    try {
+      final root = await ref.read(downloadDirProvider.future);
+      final prefs = await SharedPreferences.getInstance();
+      final db = await ref.read(historyDatabaseProvider.future);
+      final result = await db.findMoved(
+        currentRoot: root,
+        previousRoots: previousDownloadDirs(prefs),
+      );
+      if (!mounted) return;
+      ref.read(historyRevisionProvider.notifier).changed();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t.historyFindMovedResult(result.relinked, result.missing),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        // A later page may have failed after earlier rows were relinked.
+        ref.read(historyRevisionProvider.notifier).changed();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.historyError)));
+      }
+    } finally {
+      if (mounted) setState(() => _findingMoved = false);
+    }
+  }
+
   String _search = '';
   int _page = 0;
   @override
@@ -26,7 +66,41 @@ class _DownloadHistoryScreenState extends ConsumerState<DownloadHistoryScreen> {
       downloadHistoryProvider((search: _search, page: _page)),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(t.downloadHistory)),
+      appBar: AppBar(
+        title: Text(t.downloadHistory),
+        actions: [
+          if (_findingMoved)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.drive_file_move_outlined),
+              tooltip: t.historyFindMoved,
+              onSelected: (_) => _findMoved(),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'findMoved',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.historyFindMoved),
+                      Text(
+                        t.historyFindMovedDescription,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -52,6 +126,7 @@ class _DownloadHistoryScreenState extends ConsumerState<DownloadHistoryScreen> {
                       itemCount: rows.length,
                       itemBuilder: (context, index) {
                         final entry = rows[index];
+                        final link = serviceTrackLink(entry.track);
                         return ListTile(
                           leading: const Icon(Icons.download_done),
                           title: Text(entry.track.name),
@@ -69,7 +144,12 @@ class _DownloadHistoryScreenState extends ConsumerState<DownloadHistoryScreen> {
                                         _FileLocationScreen(entry: entry),
                                   ),
                                 );
-                              } else {
+                              } else if (action == 'copy') {
+                                await copyServiceTrackLink(
+                                  context,
+                                  entry.track,
+                                );
+                              } else if (action == 'remove') {
                                 try {
                                   final db = await ref.read(
                                     historyDatabaseProvider.future,
@@ -90,6 +170,15 @@ class _DownloadHistoryScreenState extends ConsumerState<DownloadHistoryScreen> {
                               }
                             },
                             itemBuilder: (_) => [
+                              if (link != null)
+                                PopupMenuItem(
+                                  value: 'copy',
+                                  child: Text(
+                                    t.copyServiceLink(
+                                      serviceTrackLinkName(link),
+                                    ),
+                                  ),
+                                ),
                               PopupMenuItem(
                                 value: 'location',
                                 child: Text(t.historyOpenLocation),

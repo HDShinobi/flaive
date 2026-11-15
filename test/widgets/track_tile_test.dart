@@ -18,6 +18,7 @@ Future<void> pumpTrackTile(
   bool selected = false,
   VoidCallback? onLongPress,
   VoidCallback? onSelectToggle,
+  VoidCallback? onCopyLink,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -34,6 +35,7 @@ Future<void> pumpTrackTile(
           selected: selected,
           onLongPress: onLongPress,
           onSelectToggle: onSelectToggle,
+          onCopyLink: onCopyLink,
         ),
       ),
     ),
@@ -52,6 +54,25 @@ void main() {
     albumName: 'Test Album',
   );
 
+  testWidgets('copy menu calls action and preserves long press selection', (tester) async {
+    var copied = 0;
+    var selected = 0;
+    const linked = Track(id: 'qobuz:42', name: 'Linked', artists: 'Artist');
+    await pumpTrackTile(tester, track: linked, onDownload: () {},
+      onCopyLink: () => copied++, onLongPress: () => selected++);
+    await tester.longPress(find.text('Linked'));
+    expect(selected, 1);
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy Qobuz link'));
+    await tester.pumpAndSettle();
+    expect(copied, 1);
+    await pumpTrackTile(tester, track: linked, onDownload: () {},
+      onCopyLink: () => copied++, selectionMode: true);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    await pumpTrackTile(tester, track: track, onDownload: () {}, onCopyLink: () => copied++);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+  });
   group('TrackTile', () {
     testWidgets('shows track name and artist subtitle', (tester) async {
       await pumpTrackTile(

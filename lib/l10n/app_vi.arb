@@ -642,5 +642,34 @@
         "type": "int"
       }
     }
+  },
+  "copyServiceLink": "Sao chép liên kết {service}",
+  "copiedServiceLink": "Đã sao chép liên kết {service}",
+  "historyFindMoved": "Tìm bản tải đã chuyển thư mục",
+  "historyFindMovedDescription": "Tìm tệp đã chuyển cùng thư mục tải xuống. Cấu trúc thư mục và tên tệp phải giữ nguyên.",
+  "historyFindMovedResult": "Đã liên kết lại {relinked}; còn thiếu: {missing}.",
+  "@copyServiceLink": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "@copiedServiceLink": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "@historyFindMovedResult": {
+    "placeholders": {
+      "relinked": {
+        "type": "int"
+      },
+      "missing": {
+        "type": "int"
+      }
+    }
   }
 }

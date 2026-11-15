@@ -1324,4 +1324,26 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get playlistExportFailed => 'Không thể xuất M3U8';
+
+  @override
+  String copyServiceLink(String service) {
+    return 'Sao chép liên kết $service';
+  }
+
+  @override
+  String copiedServiceLink(String service) {
+    return 'Đã sao chép liên kết $service';
+  }
+
+  @override
+  String get historyFindMoved => 'Tìm bản tải đã chuyển thư mục';
+
+  @override
+  String get historyFindMovedDescription =>
+      'Tìm tệp đã chuyển cùng thư mục tải xuống. Cấu trúc thư mục và tên tệp phải giữ nguyên.';
+
+  @override
+  String historyFindMovedResult(int relinked, int missing) {
+    return 'Đã liên kết lại $relinked; còn thiếu: $missing.';
+  }
 }

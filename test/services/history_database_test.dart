@@ -6,6 +6,15 @@ import 'package:lossless_music_download/models/library_entry.dart';
 import 'package:lossless_music_download/services/history_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+class _RacingHistory extends HistoryDatabase {
+  _RacingHistory(String path) : super(path: path, factory: databaseFactoryFfi);
+  @override
+  Future<bool> updateFilePath(String id, String expected, String target) async {
+    await (await database).update('history', {'file_path': '$target.concurrent'}, where: 'id = ?', whereArgs: [id]);
+    return super.updateFilePath(id, expected, target);
+  }
+}
+
 void main() {
   sqfliteFfiInit();
   late Directory dir;
@@ -65,6 +74,73 @@ void main() {
   tearDown(() async {
     await history.close();
     await dir.delete(recursive: true);
+  });
+  test('findMoved relinks file moved under new root', () async {
+    final old = '${dir.path}/old';
+    final current = '${dir.path}/new';
+    final entry = await add('moved', song, path: '$old/Artist/Album/song.flac');
+    await Directory(old).rename(current);
+    expect(await history.findMoved(currentRoot: current, previousRoots: [old]),
+      (relinked: 1, missing: 0));
+    final row = (await history.list()).single;
+    expect(row.filePath, '$current/Artist/Album/song.flac');
+    expect(row.track.id, song.id);
+    expect(row.downloadedAt, entry.downloadedAt);
+    expect(await history.findMoved(currentRoot: current, previousRoots: [old]),
+      (relinked: 0, missing: 0));
+  });
+  test('findMoved preserves valid old files even when a new copy exists', () async {
+    final entry = await add('valid', song, path: '${dir.path}/old/song.flac');
+    await Directory('${dir.path}/new').create();
+    await File(entry.filePath).copy('${dir.path}/new/song.flac');
+    expect(await history.findMoved(currentRoot: '${dir.path}/new', previousRoots: ['${dir.path}/old']),
+      (relinked: 0, missing: 0));
+    expect((await history.list()).single.filePath, entry.filePath);
+  });
+  test('findMoved never overwrites a concurrent path update', () async {
+    await history.close();
+    history = _RacingHistory('${dir.path}/history.db');
+    final entry = await add('racing', song, path: '${dir.path}/old/song.flac');
+    await Directory('${dir.path}/old').rename('${dir.path}/new');
+    expect(await history.findMoved(currentRoot: '${dir.path}/new', previousRoots: ['${dir.path}/old']),
+      (relinked: 0, missing: 1));
+    expect((await history.list()).single.filePath, '${dir.path}/new/song.flac.concurrent');
+    expect(await File(entry.filePath).exists(), false);
+  });
+  test('findMoved counts missing and never deletes', () async {
+    final present = await add('present', song);
+    final missing = await add('missing', song);
+    await File(missing.filePath).delete();
+    expect(await history.findMoved(currentRoot: '${dir.path}/new', previousRoots: [dir.path]),
+      (relinked: 0, missing: 1));
+    expect(await history.list(), hasLength(2));
+    expect(await File(present.filePath).exists(), true);
+  });
+  test('findMoved ignores dotdot relative', () async {
+    final entry = await add('outside', song, path: '${dir.path}/outside/song.flac');
+    await File(entry.filePath).delete();
+    // Joining ../outside against currentRoot would find this unrelated file.
+    await File(entry.filePath).writeAsString('unrelated');
+    await (await history.database).update('history', {'file_path': '${dir.path}/old/../outside/song.flac'});
+    expect(await history.findMoved(currentRoot: '${dir.path}/new', previousRoots: ['${dir.path}/old']),
+      (relinked: 0, missing: 1));
+    expect((await history.list()).single.filePath, '${dir.path}/old/../outside/song.flac');
+  });
+  test('findMoved pages beyond 256 and skips content URIs', () async {
+    final sql = await history.database;
+    final batch = sql.batch();
+    for (var i = 0; i < 258; i++) {
+      batch.insert('history', HistoryEntry(id: 'row$i', track: song, service: 'qobuz',
+        filePath: '${dir.path}/old/$i.flac', downloadedAt: DateTime(2026)).toRow());
+    }
+    batch.insert('history', HistoryEntry(id: 'saf', track: song, service: 'qobuz',
+      filePath: 'content://provider/song.flac', downloadedAt: DateTime(2026)).toRow());
+    await batch.commit(noResult: true);
+    await Directory('${dir.path}/new').create();
+    await File('${dir.path}/new/257.flac').writeAsString('audio');
+    expect(await history.findMoved(currentRoot: '${dir.path}/new', previousRoots: ['content://provider', '${dir.path}/old']),
+      (relinked: 1, missing: 258));
+    expect(await history.list(limit: 300), hasLength(259));
   });
   test('re-enrichment updates path and tags but preserves download identity', () async {
     final before = await add('download', song);

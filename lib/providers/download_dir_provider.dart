@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_dirs.dart';
@@ -6,6 +8,27 @@ import 'extensions_provider.dart';
 /// SharedPreferences key holding the user-selected download directory (a real
 /// filesystem path). Absent/empty means "use the platform default".
 const kDownloadDirPrefKey = 'download_directory';
+
+const kDownloadPreviousDirsPrefKey = 'download_previous_dirs_v1';
+
+List<String> previousDownloadDirs(SharedPreferences prefs) {
+  try {
+    final value = jsonDecode(
+      prefs.getString(kDownloadPreviousDirsPrefKey) ?? '[]',
+    );
+    if (value is List) {
+      return value
+          .whereType<String>()
+          .where((path) => path.startsWith('/'))
+          .toSet()
+          .take(32)
+          .toList();
+    }
+  } on FormatException catch (_) {
+    // A damaged preference must not prevent choosing a new destination.
+  }
+  return [];
+}
 
 /// Resolves the effective download directory: the persisted custom path when
 /// the user has chosen one, otherwise [fallback] (the platform default).
@@ -84,6 +107,14 @@ class DownloadDirController extends Notifier<void> {
   /// Persists [path] as the custom download directory and re-wires the backend.
   Future<void> setDirectory(String path) async {
     final prefs = await SharedPreferences.getInstance();
+    final previous = await ref.read(downloadDirPathProvider);
+    if (previous != path && previous.startsWith('/')) {
+      final roots = {
+        previous,
+        ...previousDownloadDirs(prefs),
+      }.take(32).toList();
+      await prefs.setString(kDownloadPreviousDirsPrefKey, jsonEncode(roots));
+    }
     await prefs.setString(kDownloadDirPrefKey, path);
     // downloadDirPathProvider caches its resolved Future, so invalidate it too
     // to force a fresh read of the new pref value.

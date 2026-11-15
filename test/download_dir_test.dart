@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lossless_music_download/providers/download_dir_provider.dart';
@@ -27,6 +28,40 @@ class FakeBackendBridge extends BackendBridge {
 void main() {
   const testPath = '/tmp/test_dl';
 
+  test('directory changes remember roots as bounded most recent JSON', () async {
+    SharedPreferences.setMockInitialValues({kDownloadDirPrefKey: '/old',
+      'download_previous_dirs_v1': jsonEncode(List.generate(32, (i) => '/root$i'))});
+    final container = ProviderContainer(overrides: [backendBridgeProvider.overrideWithValue(FakeBackendBridge())]);
+    addTearDown(container.dispose);
+    await container.read(downloadDirControllerProvider.notifier).setDirectory('/new');
+    final prefs = await SharedPreferences.getInstance();
+    var roots = jsonDecode(prefs.getString('download_previous_dirs_v1')!) as List;
+    expect(roots, hasLength(32));
+    expect(roots.first, '/old');
+    await container.read(downloadDirControllerProvider.notifier).setDirectory('/root0');
+    roots = jsonDecode(prefs.getString('download_previous_dirs_v1')!) as List;
+    expect(roots.take(3), ['/new', '/old', '/root0']);
+    await container.read(downloadDirControllerProvider.notifier).setDirectory('/root0');
+    expect(jsonDecode(prefs.getString('download_previous_dirs_v1')!), roots);
+  });
+  test('directory change remembers the effective default root', () async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer(overrides: [
+      downloadDirPathProvider.overrideWithValue(Future.value('/default')),
+      backendBridgeProvider.overrideWithValue(FakeBackendBridge()),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(downloadDirControllerProvider.notifier).setDirectory('/new');
+    final prefs = await SharedPreferences.getInstance();
+    expect(previousDownloadDirs(prefs), ['/default']);
+  });
+  test('previous roots tolerate malformed JSON and filter non-path entries', () async {
+    SharedPreferences.setMockInitialValues({'download_previous_dirs_v1': '{bad'});
+    final prefs = await SharedPreferences.getInstance();
+    expect(previousDownloadDirs(prefs), isEmpty);
+    await prefs.setString('download_previous_dirs_v1', jsonEncode(['/ok', 1, 'content://root', '/ok']));
+    expect(previousDownloadDirs(prefs), ['/ok']);
+  });
   group('downloadDirProvider', () {
     test('returns injected path and records both bridge calls', () async {
       final fake = FakeBackendBridge();

@@ -642,5 +642,34 @@
         "type": "int"
       }
     }
+  },
+  "copyServiceLink": "Copy {service} link",
+  "copiedServiceLink": "Copied {service} link",
+  "historyFindMoved": "Find moved downloads",
+  "historyFindMovedDescription": "Find files moved with the download folder. Folder layout and filenames must be unchanged.",
+  "historyFindMovedResult": "Relinked {relinked}; still missing: {missing}.",
+  "@copyServiceLink": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "@copiedServiceLink": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "@historyFindMovedResult": {
+    "placeholders": {
+      "relinked": {
+        "type": "int"
+      },
+      "missing": {
+        "type": "int"
+      }
+    }
   }
 }

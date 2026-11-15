@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../utils/service_track_link.dart';
 import '../l10n/app_localizations.dart';
 import '../models/track.dart';
 import '../providers/download_dir_provider.dart';
@@ -362,6 +363,7 @@ class AlbumScreen extends ConsumerWidget {
                     itemCount: data.tracks.length,
                     itemBuilder: (ctx, i) => TrackTile(
                       track: data.tracks[i],
+                      onCopyLink: () => copyServiceTrackLink(ctx, data.tracks[i]),
                       downloaded: downloaded.contains(historyLookupKey(data.tracks[i])),
                       qualityHint: data.tracks[i].qualityBadge,
                       onDownload: () => _onDownload(context, ref, data.tracks[i], data.name),

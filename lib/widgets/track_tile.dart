@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import '../models/track.dart';
+import '../utils/service_track_link.dart';
 import '../theme/app_tokens.dart';
 import 'preview_button.dart';
 
@@ -33,8 +34,10 @@ class TrackTile extends StatelessWidget {
     this.onAlbumTap,
     this.showPreview = true,
     this.downloaded = false,
+    this.onCopyLink,
   });
 
+  final VoidCallback? onCopyLink;
   final Track track;
   final bool downloaded;
   final VoidCallback onDownload;
@@ -61,6 +64,7 @@ class TrackTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final link = serviceTrackLink(track);
     final cs = Theme.of(context).colorScheme;
     final tokens = context.tokens;
     final tt = Theme.of(context).textTheme;
@@ -123,6 +127,14 @@ class TrackTile extends StatelessWidget {
             _DownloadStateIcon(
               downloadState: downloadState,
               onDownload: onDownload,
+            ),
+          if (!selectionMode && onCopyLink != null && link != null)
+            PopupMenuButton<String>(
+              onSelected: (_) => onCopyLink!(),
+              itemBuilder: (_) => [PopupMenuItem(
+                value: 'copy',
+                child: Text(AppLocalizations.of(context).copyServiceLink(serviceTrackLinkName(link))),
+              )],
             ),
         ],
       ),

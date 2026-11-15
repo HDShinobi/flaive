@@ -1328,4 +1328,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playlistExportFailed => 'Could not export M3U8';
+
+  @override
+  String copyServiceLink(String service) {
+    return 'Copy $service link';
+  }
+
+  @override
+  String copiedServiceLink(String service) {
+    return 'Copied $service link';
+  }
+
+  @override
+  String get historyFindMoved => 'Find moved downloads';
+
+  @override
+  String get historyFindMovedDescription =>
+      'Find files moved with the download folder. Folder layout and filenames must be unchanged.';
+
+  @override
+  String historyFindMovedResult(int relinked, int missing) {
+    return 'Relinked $relinked; still missing: $missing.';
+  }
 }
