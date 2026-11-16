@@ -71,6 +71,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // Room for the 28px title plus the mono file-count line at large text scales.
+        toolbarHeight: 72,
         leading: _selecting
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -79,6 +81,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               )
             : null,
         title: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
