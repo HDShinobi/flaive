@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../l10n/app_localizations.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/brand_mark.dart';
 import '../providers/download_dir_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/onboarding_provider.dart';
@@ -77,8 +79,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
     final sdk = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
-    final permission =
-        sdk >= 30 ? Permission.manageExternalStorage : Permission.storage;
+    final permission = sdk >= 30
+        ? Permission.manageExternalStorage
+        : Permission.storage;
     var status = await permission.status;
     if (!status.isGranted) status = await permission.request();
     if (!mounted) return;
@@ -126,9 +129,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _back() => _controller.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+  );
 
   Future<void> _finish() async {
     await ref.read(onboardingSeenProvider.notifier).complete();
@@ -195,8 +198,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Center(
               child: Text(
                 '${_page + 1}/2',
-                style: TextStyle(
-                  fontSize: 11,
+                style: AppText.badge.copyWith(
                   fontWeight: FontWeight.bold,
                   color: cs.onSurfaceVariant,
                 ),
@@ -206,10 +208,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       );
     } else if (isTour) {
-      trailing = TextButton(
-        onPressed: _finish,
-        child: Text(t.onbSkip),
-      );
+      trailing = TextButton(onPressed: _finish, child: Text(t.onbSkip));
     } else {
       trailing = const SizedBox(width: 44, height: 44);
     }
@@ -270,7 +269,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               onPressed: _busy ? null : _next,
               child: Text(
                 _page == _lastPage ? t.onbGetStarted : t.onbNext,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: AppText.title.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -308,35 +307,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _title(ColorScheme cs, String text) => Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: cs.onSurface,
-        ),
-      );
+    text,
+    textAlign: TextAlign.center,
+    style: AppText.pageTitle.copyWith(
+      fontWeight: FontWeight.bold,
+      color: cs.onSurface,
+    ),
+  );
 
   Widget _desc(ColorScheme cs, String text) => Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 14, height: 1.5, color: cs.onSurfaceVariant),
-      );
+    text,
+    textAlign: TextAlign.center,
+    style: AppText.body.copyWith(height: 1.5, color: cs.onSurfaceVariant),
+  );
 
   Widget _welcomePage(ColorScheme cs, AppLocalizations t) {
     final locale = ref.watch(localeProvider).languageCode;
     return _pageShell(
       children: [
         const SizedBox(height: 24),
-        Center(
-          child: Icon(Icons.graphic_eq_rounded, size: 88, color: cs.primary),
-        ),
+        const Center(child: BrandMark(size: 88)),
         const SizedBox(height: 24),
         Text(
           t.appTitle,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 28,
+          style: AppText.pageTitle.copyWith(
             fontWeight: FontWeight.bold,
             color: cs.onSurface,
           ),
@@ -422,7 +417,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               Expanded(
                 child: Text(
                   t.onbSourcesWarn,
-                  style: TextStyle(fontSize: 12.5, color: cs.onSurface),
+                  style: AppText.caption.copyWith(color: cs.onSurface),
                 ),
               ),
             ],
@@ -477,8 +472,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 2),
                     Text(
                       t.onbVerifyVerdictSub,
-                      style:
-                          TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                      style: AppText.caption.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -635,7 +631,7 @@ class _PrepRow extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  style: AppText.caption.copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -681,9 +677,8 @@ class _StepRow extends StatelessWidget {
             ),
             child: Text(
               '$n',
-              style: TextStyle(
+              style: AppText.body.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
                 color: cs.onPrimaryContainer,
               ),
             ),
@@ -694,11 +689,7 @@ class _StepRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 3),
               child: Text(
                 text,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: cs.onSurface,
-                ),
+                style: AppText.body.copyWith(height: 1.4, color: cs.onSurface),
               ),
             ),
           ),
@@ -733,7 +724,10 @@ class _CastRow extends StatelessWidget {
           Expanded(
             child: Text(
               name,
-              style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
           ),
           if (active)
@@ -745,8 +739,7 @@ class _CastRow extends StatelessWidget {
               ),
               child: Text(
                 playingLabel!,
-                style: TextStyle(
-                  fontSize: 10.5,
+                style: AppText.badge.copyWith(
                   fontWeight: FontWeight.bold,
                   color: cs.onPrimaryContainer,
                 ),
@@ -766,8 +759,24 @@ class _SpectrogramDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const heights = [
-      0.96, 0.88, 0.92, 0.80, 0.85, 0.72, 0.78, 0.66, 0.70,
-      0.58, 0.63, 0.52, 0.60, 0.48, 0.55, 0.44, 0.50, 0.40,
+      0.96,
+      0.88,
+      0.92,
+      0.80,
+      0.85,
+      0.72,
+      0.78,
+      0.66,
+      0.70,
+      0.58,
+      0.63,
+      0.52,
+      0.60,
+      0.48,
+      0.55,
+      0.44,
+      0.50,
+      0.40,
     ];
     return Container(
       height: 92,
@@ -791,8 +800,9 @@ class _SpectrogramDemo extends StatelessWidget {
                   heightFactor: h,
                   child: Container(
                     decoration: const BoxDecoration(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(2)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(2),
+                      ),
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,

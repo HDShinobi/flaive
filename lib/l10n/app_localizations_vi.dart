@@ -1363,4 +1363,47 @@ class AppLocalizationsVi extends AppLocalizations {
   String libraryScanFailureCount(int count) {
     return 'Không đọc được $count tệp';
   }
+
+  @override
+  String get queueEmptyTitle => 'Chưa có bài nào đang tải';
+
+  @override
+  String get queueEmptyBody =>
+      'Tìm bài hát, album hoặc dán link. Mỗi file tải về sẽ được kiểm tra phổ.';
+
+  @override
+  String get queueEmptyAction => 'Tìm bài hát';
+
+  @override
+  String get settingsGroupSources => 'Nguồn';
+
+  @override
+  String get settingsGroupDownloads => 'Tải về';
+
+  @override
+  String get settingsGroupQuality => 'Chất lượng & xác minh';
+
+  @override
+  String get settingsGroupApp => 'Ứng dụng';
+
+  @override
+  String get aboutTitle => 'Giới thiệu';
+
+  @override
+  String get aboutLicenses => 'Giấy phép';
+
+  @override
+  String get aboutGitHub => 'GitHub';
+
+  @override
+  String get sourcesCompact => 'nguồn';
+
+  @override
+  String get serverConnectFrom => 'KẾT NỐI TỪ';
+
+  @override
+  String get serverHelpDlna => 'TV và loa kết nối qua DLNA.';
+
+  @override
+  String get serverHelpWebdav => 'Ứng dụng nghe nhạc kết nối qua WebDAV.';
 }

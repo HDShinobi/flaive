@@ -1367,4 +1367,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String libraryScanFailureCount(int count) {
     return '$count files could not be read';
   }
+
+  @override
+  String get queueEmptyTitle => 'Nothing downloading yet';
+
+  @override
+  String get queueEmptyBody =>
+      'Search for a song or album, or paste a link. Every download is spectrum-checked.';
+
+  @override
+  String get queueEmptyAction => 'Search songs';
+
+  @override
+  String get settingsGroupSources => 'Sources';
+
+  @override
+  String get settingsGroupDownloads => 'Downloads';
+
+  @override
+  String get settingsGroupQuality => 'Quality & verification';
+
+  @override
+  String get settingsGroupApp => 'Application';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutLicenses => 'Licenses';
+
+  @override
+  String get aboutGitHub => 'GitHub';
+
+  @override
+  String get sourcesCompact => 'sources';
+
+  @override
+  String get serverConnectFrom => 'CONNECT FROM';
+
+  @override
+  String get serverHelpDlna => 'TVs and speakers connect via DLNA.';
+
+  @override
+  String get serverHelpWebdav => 'Player apps connect via WebDAV.';
 }

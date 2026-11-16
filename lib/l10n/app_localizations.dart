@@ -2575,6 +2575,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} files could not be read'**
   String libraryScanFailureCount(int count);
+
+  /// No description provided for @queueEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing downloading yet'**
+  String get queueEmptyTitle;
+
+  /// No description provided for @queueEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a song or album, or paste a link. Every download is spectrum-checked.'**
+  String get queueEmptyBody;
+
+  /// No description provided for @queueEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Search songs'**
+  String get queueEmptyAction;
+
+  /// No description provided for @settingsGroupSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get settingsGroupSources;
+
+  /// No description provided for @settingsGroupDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get settingsGroupDownloads;
+
+  /// No description provided for @settingsGroupQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality & verification'**
+  String get settingsGroupQuality;
+
+  /// No description provided for @settingsGroupApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get settingsGroupApp;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Licenses'**
+  String get aboutLicenses;
+
+  /// No description provided for @aboutGitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get aboutGitHub;
+
+  /// No description provided for @sourcesCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'sources'**
+  String get sourcesCompact;
+
+  /// No description provided for @serverConnectFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'CONNECT FROM'**
+  String get serverConnectFrom;
+
+  /// No description provided for @serverHelpDlna.
+  ///
+  /// In en, this message translates to:
+  /// **'TVs and speakers connect via DLNA.'**
+  String get serverHelpDlna;
+
+  /// No description provided for @serverHelpWebdav.
+  ///
+  /// In en, this message translates to:
+  /// **'Player apps connect via WebDAV.'**
+  String get serverHelpWebdav;
 }
 
 class _AppLocalizationsDelegate
