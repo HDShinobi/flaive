@@ -694,6 +694,7 @@
   "aboutTitle": "About",
   "aboutLicenses": "Licenses",
   "aboutGitHub": "GitHub",
+  "linkOpenFailed": "Could not open link",
   "sourcesCompact": "sources",
   "serverConnectFrom": "CONNECT FROM",
   "serverHelpDlna": "TVs and speakers connect via DLNA.",

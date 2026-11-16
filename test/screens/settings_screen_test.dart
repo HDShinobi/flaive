@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -17,41 +18,61 @@ class _Extensions extends ExtensionsController {
 }
 
 void main() {
-  testWidgets('About card shows Flaive, BrandMark, version and licenses', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    PackageInfo.setMockInitialValues(
-      appName: 'Flaive',
-      packageName: 'xyz.losslessmusic.app',
-      version: '1.2.3',
-      buildNumber: '42',
-      buildSignature: '',
-    );
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          extensionsProvider.overrideWith(_Extensions.new),
-          downloadDirProvider.overrideWith((_) async => '/music'),
-        ],
-        child: MaterialApp(
-          theme: appTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('en'),
-          home: const SettingsScreen(),
+  testWidgets(
+    'About card shows branding, licenses and GitHub launch failures',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      PackageInfo.setMockInitialValues(
+        appName: 'Flaive',
+        packageName: 'xyz.losslessmusic.app',
+        version: '1.2.3',
+        buildNumber: '42',
+        buildSignature: '',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            extensionsProvider.overrideWith(_Extensions.new),
+            downloadDirProvider.overrideWith((_) async => '/music'),
+          ],
+          child: MaterialApp(
+            theme: appTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: const SettingsScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('ABOUT'), 400);
-    await tester.pumpAndSettle();
-    expect(find.text('Flaive'), findsOneWidget);
-    expect(find.byType(BrandMark), findsOneWidget);
-    expect(find.text('v1.2.3'), findsOneWidget);
-    await tester.ensureVisible(find.text('Licenses'));
-    await tester.tap(find.text('Licenses'));
-    await tester.pumpAndSettle();
-    expect(find.byType(LicensePage), findsOneWidget);
-  });
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('ABOUT'), 400);
+      await tester.pumpAndSettle();
+      expect(find.text('Flaive'), findsOneWidget);
+      expect(find.byType(BrandMark), findsOneWidget);
+      expect(find.text('v1.2.3'), findsOneWidget);
+      await tester.ensureVisible(find.text('GitHub'));
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      for (final throws in [false, true]) {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (throws) throw PlatformException(code: 'launch_failed');
+              return false;
+            });
+        await tester.tap(find.text('GitHub'));
+        await tester.pumpAndSettle();
+        expect(find.text('Could not open link'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('Licenses'));
+      await tester.tap(find.text('Licenses'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LicensePage), findsOneWidget);
+    },
+  );
 }

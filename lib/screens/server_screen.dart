@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import 'package:lossless_music_download/models/server_status.dart';
+import 'package:lossless_music_download/providers/download_dir_provider.dart';
 import 'package:lossless_music_download/providers/server_provider.dart';
 import 'package:lossless_music_download/theme/app_tokens.dart';
 
@@ -80,6 +81,7 @@ class _ServerBody extends ConsumerWidget {
     final startError = ref.watch(serverStartErrorProvider);
     final bool running = status.running;
     final String? url = status.url;
+    final folderPath = ref.watch(downloadDirProvider).value ?? '';
 
     final cs = Theme.of(context).colorScheme;
     return ListView(
@@ -159,6 +161,29 @@ class _ServerBody extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
+              ],
+              if (running) ...[
+                const SizedBox(height: AppSpace.sm),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.serverFolder,
+                      style: AppText.caption.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.sm),
+                    Expanded(
+                      child: Text(
+                        folderPath,
+                        style: AppText.caption.merge(tokens.mono),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
               if (!running && startError != null) ...[

@@ -69,6 +69,7 @@ void main() {
       expect(find.text('Stop server'), findsOneWidget);
       expect(find.text('Start server'), findsNothing);
       expect(find.textContaining('10.0.0.5:8200'), findsOneWidget);
+      expect(find.text('/test/downloads'), findsOneWidget);
       expect(find.text('Flaive'), findsOneWidget);
       expect(find.text('CONNECT FROM'), findsOneWidget);
       expect(find.text('TVs and speakers connect via DLNA.'), findsOneWidget);

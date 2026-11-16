@@ -694,6 +694,7 @@
   "aboutTitle": "Giới thiệu",
   "aboutLicenses": "Giấy phép",
   "aboutGitHub": "GitHub",
+  "linkOpenFailed": "Không thể mở liên kết",
   "sourcesCompact": "nguồn",
   "serverConnectFrom": "KẾT NỐI TỪ",
   "serverHelpDlna": "TV và loa kết nối qua DLNA.",

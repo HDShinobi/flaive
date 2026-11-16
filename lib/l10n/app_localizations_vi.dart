@@ -1396,6 +1396,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get aboutGitHub => 'GitHub';
 
   @override
+  String get linkOpenFailed => 'Không thể mở liên kết';
+
+  @override
   String get sourcesCompact => 'nguồn';
 
   @override

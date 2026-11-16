@@ -514,7 +514,7 @@ class _AboutCardState extends State<_AboutCard> {
                 height: 64,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0E0F11),
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: context.tokens.lineSoft),
                 ),
@@ -549,10 +549,22 @@ class _AboutCardState extends State<_AboutCard> {
                 child: Text(t.aboutLicenses),
               ),
               TextButton(
-                onPressed: () => launchUrl(
-                  Uri.parse('https://github.com/HDShinobi/flaive'),
-                  mode: LaunchMode.externalApplication,
-                ),
+                onPressed: () async {
+                  try {
+                    if (await launchUrl(
+                      Uri.parse('https://github.com/HDShinobi/flaive'),
+                      mode: LaunchMode.externalApplication,
+                    )) {
+                      return;
+                    }
+                  } catch (_) {
+                    // Launch failures use the same feedback as a false result.
+                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(t.linkOpenFailed)));
+                },
                 child: Text(t.aboutGitHub),
               ),
             ],

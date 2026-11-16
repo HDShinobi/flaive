@@ -1400,6 +1400,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGitHub => 'GitHub';
 
   @override
+  String get linkOpenFailed => 'Could not open link';
+
+  @override
   String get sourcesCompact => 'sources';
 
   @override

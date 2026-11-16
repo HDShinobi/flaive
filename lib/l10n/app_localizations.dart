@@ -2636,6 +2636,12 @@ abstract class AppLocalizations {
   /// **'GitHub'**
   String get aboutGitHub;
 
+  /// No description provided for @linkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open link'**
+  String get linkOpenFailed;
+
   /// No description provided for @sourcesCompact.
   ///
   /// In en, this message translates to:
