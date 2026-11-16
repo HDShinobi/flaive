@@ -82,7 +82,7 @@ class QueueScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t.tabQueue),
+        title: Text(t.tabQueue, style: AppText.pageTitle),
         actions: [
           IconButton(
             tooltip: reason == 'paused' ? t.queueResume : t.queuePause,

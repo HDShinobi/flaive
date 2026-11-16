@@ -172,7 +172,7 @@ class SettingsScreen extends ConsumerWidget {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.tabSettings)),
+      appBar: AppBar(title: Text(t.tabSettings, style: AppText.pageTitle)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpace.page,

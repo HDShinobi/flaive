@@ -40,7 +40,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
     final startError = ref.watch(serverStartErrorProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.tabServer)),
+      appBar: AppBar(title: Text(t.tabServer, style: AppText.pageTitle)),
       body: serverAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => startError != null

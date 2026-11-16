@@ -121,9 +121,9 @@ void main() {
       expect(theme.bottomSheetTheme.backgroundColor, const Color(0xFF15171A));
       expect(theme.dividerTheme.color, const Color(0xFF2A2E34));
       final title = theme.appBarTheme.titleTextStyle!;
-      expect(title.fontSize, AppText.pageTitle.fontSize);
-      expect(title.fontWeight, AppText.pageTitle.fontWeight);
-      expect(title.letterSpacing, AppText.pageTitle.letterSpacing);
+      // Sub-pages get 22px; the 28px pageTitle is applied only on tab roots.
+      expect(title.fontSize, 22);
+      expect(title.fontWeight, FontWeight.w600);
       // A null family renders as tofu boxes in goldens; keep the theme's font.
       expect(title.fontFamily, isNotNull);
       final nav = theme.navigationBarTheme;

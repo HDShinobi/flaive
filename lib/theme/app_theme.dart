@@ -111,10 +111,15 @@ ThemeData appTheme() {
       ),
     ),
   );
-  // Merge onto the theme's titleLarge so the title keeps the platform font family and color.
+  // Pushed sub-pages keep titleLarge (22px); tab roots opt into AppText.pageTitle.
+  // Built from titleLarge so the title keeps the platform font family and color.
   return base.copyWith(
     appBarTheme: AppBarTheme(
-      titleTextStyle: base.textTheme.titleLarge!.merge(AppText.pageTitle),
+      // Raw textTheme has no geometry yet (sizes are added at Theme.of), so set 22 here.
+      titleTextStyle: base.textTheme.titleLarge!.copyWith(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 }
