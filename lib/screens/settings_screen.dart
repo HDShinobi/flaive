@@ -15,6 +15,7 @@ import '../providers/extensions_provider.dart';
 import '../providers/home_feed_provider.dart';
 import '../services/download_paths.dart';
 import '../services/update_checker.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/update_dialog.dart';
 import 'download_file_settings_screen.dart';
 import 'lyrics_settings_screen.dart';
@@ -239,10 +240,7 @@ class SettingsScreen extends ConsumerWidget {
                 path,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontFamily: 'monospace'),
+                style: Theme.of(context).textTheme.bodySmall?.merge(context.tokens.mono),
               ),
               trailing: const Icon(Icons.edit_outlined),
               onTap: () => _pickDownloadFolder(context, ref),
