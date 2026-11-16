@@ -10,7 +10,7 @@ import '../services/extension_registry_service.dart';
 import 'extensions_provider.dart'; // backendBridgeProvider, appDirsProvider, extensionsProvider
 
 const kDefaultAggregatorUrl =
-    'https://raw.githubusercontent.com/HDShinobi/lossless-music-registry/main/repos.json';
+    'https://raw.githubusercontent.com/HDShinobi/flaive-registry/main/repos.json';
 
 final httpClientProvider = Provider<http.Client>((ref) {
   final c = http.Client();

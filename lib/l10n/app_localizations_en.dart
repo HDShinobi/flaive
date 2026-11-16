@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Lossless Music';
+  String get appTitle => 'Flaive';
 
   @override
   String get tabSearch => 'Search';
@@ -627,7 +627,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingStoragePermissionBody =>
-      'To save downloads to a folder you choose, allow \"All files access\" for Lossless Music in system settings.';
+      'To save downloads to a folder you choose, allow \"All files access\" for Flaive in system settings.';
 
   @override
   String get settingStoragePermissionOpen => 'Open settings';

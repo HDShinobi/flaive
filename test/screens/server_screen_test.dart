@@ -53,7 +53,7 @@ void main() {
       const running = ServerStatus(
         running: true,
         url: 'http://10.0.0.5:8200/',
-        name: 'Lossless Music',
+        name: 'Flaive',
       );
 
       await tester.pumpWidget(

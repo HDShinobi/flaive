@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Lossless Music",
+  "appTitle": "Flaive",
   "tabSearch": "Search",
   "tabQueue": "Queue",
   "tabServer": "Server",
@@ -265,7 +265,7 @@
   "settingDownloadFolderChange": "Tap to change",
   "settingDownloadFolderUpdated": "Download folder updated",
   "settingStoragePermissionTitle": "Storage access needed",
-  "settingStoragePermissionBody": "To save downloads to a folder you choose, allow \"All files access\" for Lossless Music in system settings.",
+  "settingStoragePermissionBody": "To save downloads to a folder you choose, allow \"All files access\" for Flaive in system settings.",
   "settingStoragePermissionOpen": "Open settings",
   "commonCancel": "Cancel",
   "fallbackSourcesTitle": "Fallback sources",

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="branding/app_icon.png" alt="Lossless Music" width="120" />
+<img src="branding/app_icon.png" alt="Flaive" width="120" />
 
-# Lossless Music
+# Flaive
 
 ### Own genuine, *verifiable* lossless audio — for ears that don't settle.
 
@@ -17,7 +17,7 @@
 </p>
 
 <p>
-  <a href="https://github.com/HDShinobi/lossless-music-releases/releases/latest"><b>⬇️  Download APK</b></a>
+  <a href="https://github.com/HDShinobi/flaive-releases/releases/latest"><b>⬇️  Download APK</b></a>
   &nbsp;·&nbsp;
   <a href="https://losslessmusic.xyz">🌐 Website</a>
   &nbsp;·&nbsp;
@@ -28,7 +28,7 @@
 
 ---
 
-**Lossless Music** downloads high-resolution audio, **proves it's truly lossless** with a
+**Flaive** downloads high-resolution audio, **proves it's truly lossless** with a
 spectral-frequency analysis of every file, and streams your verified library to any player
 on your local network. It is **not a music player** — it's the piece that *builds and serves*
 a trustworthy hi-fi library to the players you already love (PureBit, UAPP, Poweramp…).
@@ -56,12 +56,12 @@ up-front. Nothing activates on its own — and no music sources are bundled.
 
 > Android 8.0+ · arm64-v8a devices only · installs outside the Play Store.
 
-1. Grab the latest APK from the **[Releases page](https://github.com/HDShinobi/lossless-music-releases/releases/latest)**.
+1. Grab the latest APK from the **[Releases page](https://github.com/HDShinobi/flaive-releases/releases/latest)**.
 2. Verify the file against the published **SHA-256** hash.
 3. Enable *Install unknown apps* for your browser/file manager, then open the APK.
 
 ```
-https://github.com/HDShinobi/lossless-music-releases/releases/download/v0.5.7/lossless-music-v0.5.7.apk
+https://github.com/HDShinobi/flaive-releases/releases/download/v0.5.7/lossless-music-v0.5.7.apk
 ```
 
 ---
@@ -112,7 +112,7 @@ The signed APK lands in `build/app/outputs/flutter-apk/`.
 ## 🧭 Philosophy
 
 > **This is a source, not a sink.**
-> Lossless Music doesn't play music and doesn't host it. It builds a *verified* high-quality
+> Flaive doesn't play music and doesn't host it. It builds a *verified* high-quality
 > library and hands it to the player of your choice. You stay in control of where the music
 > comes from.
 

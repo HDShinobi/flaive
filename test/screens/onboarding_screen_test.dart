@@ -18,7 +18,7 @@ void main() {
     await t.pumpWidget(_wrap());
     await t.pump(); // flush the initState permission-state setState
 
-    expect(find.text('Lossless Music'), findsOneWidget);
+    expect(find.text('Flaive'), findsOneWidget);
     expect(find.text('Tiếng Việt'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Tiếp'), findsOneWidget); // primary "Next"

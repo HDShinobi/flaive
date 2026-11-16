@@ -95,7 +95,7 @@ class MediaServerTest {
         val notStarted = MediaServer(root.path, "Not started", "127.0.0.1", null, preferredPort = 0)
         assertEquals("", notStarted.baseUrl)
         assertEquals("LosslessMusic Test", server.friendlyName)
-        assertEquals(DeviceDescription.stableUdn(server.friendlyName, root.path), server.udn)
+        assertEquals(DeviceDescription.stableUdn("Lossless Music", root.path), server.udn)
         assertTrue(server.baseUrl.startsWith("http://127.0.0.1:"))
     }
 

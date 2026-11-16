@@ -51,7 +51,7 @@ void main() {
 
   testWidgets('Settings opens Logs and back returns to Settings', (t) async {
     PackageInfo.setMockInitialValues(
-      appName: 'Lossless Music',
+      appName: 'Flaive',
       packageName: 'test',
       version: '0.11.0',
       buildNumber: '23',

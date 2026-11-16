@@ -24,7 +24,7 @@ class UpdateInfo {
 
 /// GitHub Releases "latest" endpoint for the public APK repo.
 const _latestReleaseApi =
-    'https://api.github.com/repos/HDShinobi/lossless-music-releases/releases/latest';
+    'https://api.github.com/repos/HDShinobi/flaive-releases/releases/latest';
 
 /// True if [latest] is a newer semantic version than [current]. Build suffixes
 /// (`+n`) and prerelease tags (`-rc1`) are ignored; missing components are 0.

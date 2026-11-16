@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Lossless Music'**
+  /// **'Flaive'**
   String get appTitle;
 
   /// No description provided for @tabSearch.
@@ -1271,7 +1271,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingStoragePermissionBody.
   ///
   /// In en, this message translates to:
-  /// **'To save downloads to a folder you choose, allow \"All files access\" for Lossless Music in system settings.'**
+  /// **'To save downloads to a folder you choose, allow \"All files access\" for Flaive in system settings.'**
   String get settingStoragePermissionBody;
 
   /// No description provided for @settingStoragePermissionOpen.

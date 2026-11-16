@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'Lossless Music';
+  String get appTitle => 'Flaive';
 
   @override
   String get tabSearch => 'Tìm';
@@ -624,7 +624,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingStoragePermissionBody =>
-      'Để lưu file vào thư mục bạn chọn, hãy cấp quyền \"Truy cập tất cả tệp\" cho Lossless Music trong cài đặt hệ thống.';
+      'Để lưu file vào thư mục bạn chọn, hãy cấp quyền \"Truy cập tất cả tệp\" cho Flaive trong cài đặt hệ thống.';
 
   @override
   String get settingStoragePermissionOpen => 'Mở cài đặt';

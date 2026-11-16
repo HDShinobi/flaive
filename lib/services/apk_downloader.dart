@@ -21,7 +21,7 @@ class ApkDownloader {
     }
     final dir = await getExternalStorageDirectory() ??
         await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/lossless-music-$version.apk';
+    final path = '${dir.path}/flaive-$version.apk';
 
     final resp = await http.Client().send(http.Request('GET', Uri.parse(url)));
     if (resp.statusCode != 200) {

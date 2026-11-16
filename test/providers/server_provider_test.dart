@@ -87,7 +87,7 @@ void main() {
       const running = ServerStatus(
         running: true,
         url: 'http://10.0.0.5:8200/',
-        name: 'Lossless Music',
+        name: 'Flaive',
       );
       final container = makeContainer(fake);
       addTearDown(container.dispose);
@@ -106,7 +106,7 @@ void main() {
       expect(status.url, 'http://10.0.0.5:8200/');
       expect(fake.startCalled, isTrue);
       expect(fake.lastRootDir, '/test/downloads');
-      expect(fake.lastServerName, 'Lossless Music');
+      expect(fake.lastServerName, 'Flaive');
     });
 
     test('start() → AsyncError when bridge throws', () async {
@@ -133,7 +133,7 @@ void main() {
       const running = ServerStatus(
         running: true,
         url: 'http://10.0.0.5:8200/',
-        name: 'Lossless Music',
+        name: 'Flaive',
       );
       final container = makeContainer(fake);
       addTearDown(container.dispose);

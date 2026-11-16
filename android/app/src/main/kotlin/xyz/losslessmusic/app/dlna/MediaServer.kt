@@ -26,12 +26,15 @@ import java.net.BindException
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.runBlocking
 
+private const val LEGACY_UDN_SEED = "Lossless Music"
+
 /** HTTP portion of one DLNA MediaServer. The controller owns SSDP. */
 class MediaServer(
     private val rootDir: String, val friendlyName: String, private val lanIp: String,
     private val meta: MetadataProvider?, private val preferredPort: Int = 8200,
 ) {
-    val udn: String = DeviceDescription.stableUdn(friendlyName, rootDir)
+    // Seeded with the pre-rename name so renderers keep recognising this server.
+    val udn: String = DeviceDescription.stableUdn(LEGACY_UDN_SEED, rootDir)
     @Volatile var baseUrl: String = ""
         private set
     @Volatile var onUnexpectedStop: ((String) -> Unit)? = null

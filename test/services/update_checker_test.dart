@@ -39,13 +39,13 @@ void main() {
           'body': body,
           'prerelease': prerelease,
           'html_url':
-              'https://github.com/HDShinobi/lossless-music-releases/releases/tag/$tag',
+              'https://github.com/HDShinobi/flaive-releases/releases/tag/$tag',
           'assets': assets ??
               [
                 {
-                  'name': 'lossless-music-v0.2.0.apk',
+                  'name': 'flaive-v0.2.0.apk',
                   'browser_download_url':
-                      'https://github.com/HDShinobi/lossless-music-releases/releases/download/v0.2.0/lossless-music-v0.2.0.apk',
+                      'https://github.com/HDShinobi/flaive-releases/releases/download/v0.2.0/flaive-v0.2.0.apk',
                 },
               ],
         };
@@ -54,7 +54,7 @@ void main() {
       final info = parseLatestRelease(release())!;
       expect(info.version, '0.2.0');
       expect(info.changelog, 'Changelog here');
-      expect(info.apkUrl, endsWith('lossless-music-v0.2.0.apk'));
+      expect(info.apkUrl, endsWith('flaive-v0.2.0.apk'));
       expect(info.isPrerelease, isFalse);
     });
 
@@ -62,7 +62,7 @@ void main() {
       final info = parseLatestRelease(release(assets: [
         {'name': 'notes.txt', 'browser_download_url': 'http://x/notes.txt'},
         {
-          'name': 'lossless-music-v0.2.0.apk',
+          'name': 'flaive-v0.2.0.apk',
           'browser_download_url': 'http://x/app.apk',
         },
       ]))!;

@@ -45,7 +45,7 @@ class ServerController extends AsyncNotifier<ServerStatus> {
       final dir = await ref.read(downloadDirProvider.future);
       final result = await ref
           .read(backendBridgeProvider)
-          .startMediaServer(dir, 'Lossless Music');
+          .startMediaServer(dir, 'Flaive');
       _revision++;
       ref.read(serverStartErrorProvider.notifier).set(null);
       state = AsyncData(result);
