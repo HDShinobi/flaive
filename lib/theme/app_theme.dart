@@ -48,7 +48,7 @@ ColorScheme _scheme() => const ColorScheme(
 
 ThemeData appTheme() {
   final scheme = _scheme();
-  return ThemeData(
+  final base = ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: kGround,
@@ -100,7 +100,6 @@ ThemeData appTheme() {
       linearTrackColor: Color(0xFF252930),
     ),
     dividerTheme: const DividerThemeData(color: _lineSoft),
-    appBarTheme: const AppBarTheme(titleTextStyle: AppText.pageTitle),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -110,6 +109,12 @@ ThemeData appTheme() {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: const BorderSide(color: _line),
       ),
+    ),
+  );
+  // Merge onto the theme's titleLarge so the title keeps the platform font family and color.
+  return base.copyWith(
+    appBarTheme: AppBarTheme(
+      titleTextStyle: base.textTheme.titleLarge!.merge(AppText.pageTitle),
     ),
   );
 }

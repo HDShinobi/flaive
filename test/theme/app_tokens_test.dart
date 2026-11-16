@@ -120,7 +120,12 @@ void main() {
       expect(theme.cardTheme.color, const Color(0xFF15171A));
       expect(theme.bottomSheetTheme.backgroundColor, const Color(0xFF15171A));
       expect(theme.dividerTheme.color, const Color(0xFF2A2E34));
-      expect(theme.appBarTheme.titleTextStyle, AppText.pageTitle);
+      final title = theme.appBarTheme.titleTextStyle!;
+      expect(title.fontSize, AppText.pageTitle.fontSize);
+      expect(title.fontWeight, AppText.pageTitle.fontWeight);
+      expect(title.letterSpacing, AppText.pageTitle.letterSpacing);
+      // A null family renders as tofu boxes in goldens; keep the theme's font.
+      expect(title.fontFamily, isNotNull);
       final nav = theme.navigationBarTheme;
       expect(nav.indicatorColor, const Color(0xFF10241A));
       expect(nav.labelTextStyle!.resolve({})!.fontSize, 12);
