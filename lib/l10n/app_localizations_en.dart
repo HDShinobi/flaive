@@ -1413,4 +1413,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverHelpWebdav => 'Player apps connect via WebDAV.';
+
+  @override
+  String verdictCutoff(String value) {
+    return 'Cutoff $value';
+  }
 }

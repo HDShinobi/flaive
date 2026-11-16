@@ -48,9 +48,9 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
 
   bool _refuseWhileBusy(BuildContext context) {
     if (!ref.read(libraryBusyProvider)) return false;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(AppLocalizations.of(context).libraryBusyHint),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).libraryBusyHint)),
+    );
     return true;
   }
 
@@ -61,10 +61,9 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
     final fields = await showEditMetadataSheet(context, entry);
     if (fields == null || fields.isEmpty) return; // cancelled / nothing changed
     try {
-      await ref.read(libraryManagerProvider.notifier).editMetadata(
-            entry.path,
-            fields,
-          );
+      await ref
+          .read(libraryManagerProvider.notifier)
+          .editMetadata(entry.path, fields);
       messenger.showSnackBar(SnackBar(content: Text(t.editSaved)));
     } on LibraryBusyException {
       messenger.showSnackBar(SnackBar(content: Text(t.libraryBusyHint)));
@@ -104,15 +103,16 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
     late bool ok;
     try {
       ok = await ReplayGainService.applyToFile(
-        entry.path, ref.read(backendBridgeProvider),
+        entry.path,
+        ref.read(backendBridgeProvider),
       );
     } finally {
       running.finish();
     }
     if (!context.mounted) return;
-    messenger.showSnackBar(SnackBar(
-      content: Text(ok ? t.replayGainDone : t.replayGainFailed),
-    ));
+    messenger.showSnackBar(
+      SnackBar(content: Text(ok ? t.replayGainDone : t.replayGainFailed)),
+    );
   }
 
   Future<void> _convert(BuildContext context) async {
@@ -123,11 +123,9 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
     if (choice == null || !context.mounted) return;
     if (_refuseWhileBusy(context)) return;
     messenger.showSnackBar(SnackBar(content: Text(t.convertStarted)));
-    final newPath = await ref.read(libraryManagerProvider.notifier).convert(
-          entry.path,
-          choice.format,
-          choice.bitrate,
-        );
+    final newPath = await ref
+        .read(libraryManagerProvider.notifier)
+        .convert(entry.path, choice.format, choice.bitrate);
     if (!context.mounted) return;
     if (newPath == null) {
       messenger.showSnackBar(SnackBar(content: Text(t.convertFailed)));
@@ -183,11 +181,7 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _displayName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(_displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
         leading: BackButton(onPressed: () => context.pop()),
         actions: [
           PopupMenuButton<String>(
@@ -253,8 +247,10 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
                 value: 'delete',
                 child: ListTile(
                   leading: Icon(Icons.delete_outline, color: cs.error),
-                  title: Text(t.manageDelete,
-                      style: TextStyle(color: cs.error)),
+                  title: Text(
+                    t.manageDelete,
+                    style: TextStyle(color: cs.error),
+                  ),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -265,7 +261,12 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _Header(entry: entry, displayName: _displayName, tokens: tokens),
+          _Header(
+            entry: entry,
+            displayName: entry.title ?? _displayName,
+            tokens: tokens,
+            analysis: _analysis,
+          ),
           const SizedBox(height: 16),
           // One status badge: the format-scan badge until the spectral analysis
           // runs, then the richer spectral verdict replaces it (avoids two
@@ -276,14 +277,33 @@ class _VerifiedScreenState extends ConsumerState<VerifiedScreen> {
             _SpectralVerdict(data: _analysis!, t: t, cs: cs, tokens: tokens),
           const SizedBox(height: 16),
           // Real spectral analysis (decode → FFT → spectrogram + cutoff).
-          AudioAnalysisCard(
-            filePath: entry.path,
-            exportName: entry.artistName?.trim().isNotEmpty == true
-                ? '${entry.artistName} - ${entry.title ?? _displayName}'
-                : entry.title ?? _displayName,
-            onAnalyzed: (data) {
-              if (mounted) setState(() => _analysis = data);
-            },
+          Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: cs.copyWith(
+                surface: tokens.surface2,
+                surfaceContainer: tokens.surface2,
+                surfaceContainerHighest: tokens.surface3,
+                outlineVariant: tokens.lineSoft,
+                onSurfaceVariant: cs.onSurfaceVariant,
+                primary: cs.primary,
+              ),
+              textTheme: Theme.of(context).textTheme.copyWith(
+                bodyMedium: AppText.body.copyWith(color: cs.onSurface),
+                bodySmall: AppText.caption.copyWith(color: cs.onSurfaceVariant),
+                labelSmall: tokens.mono
+                    .merge(AppText.badge)
+                    .copyWith(color: cs.onSurfaceVariant),
+              ),
+            ),
+            child: AudioAnalysisCard(
+              filePath: entry.path,
+              exportName: entry.artistName?.trim().isNotEmpty == true
+                  ? '${entry.artistName} - ${entry.title ?? _displayName}'
+                  : entry.title ?? _displayName,
+              onAnalyzed: (data) {
+                if (mounted) setState(() => _analysis = data);
+              },
+            ),
           ),
           const SizedBox(height: 16),
           _ServeRow(t: t, cs: cs, tokens: tokens),
@@ -320,36 +340,44 @@ class _SpectralVerdict extends StatelessWidget {
 
     final (IconData icon, Color color, String label) = switch (verdict) {
       LosslessVerdict.lossless => (
-          Icons.verified_rounded,
-          cs.primary,
-          t.verdictLossless,
-        ),
+        Icons.verified_rounded,
+        cs.primary,
+        t.verdictLossless,
+      ),
       LosslessVerdict.suspectLossy => (
-          Icons.warning_amber_rounded,
-          tokens.warn,
-          t.verdictSuspect,
-        ),
+        Icons.warning_amber_rounded,
+        tokens.warn,
+        t.verdictSuspect,
+      ),
       LosslessVerdict.lossy => (
-          Icons.graphic_eq_rounded,
-          cs.onSurfaceVariant,
-          t.verdictLossy,
-        ),
+        Icons.graphic_eq_rounded,
+        tokens.info,
+        t.verdictLossy,
+      ),
       LosslessVerdict.inconclusive => (
-          Icons.help_outline_rounded,
-          tokens.muted2,
-          t.verdictInconclusive,
-        ),
+        Icons.help_outline_rounded,
+        tokens.info,
+        t.verdictInconclusive,
+      ),
+    };
+
+    final (background, border) = switch (verdict) {
+      LosslessVerdict.lossless => (tokens.accentSoft, tokens.accentLine),
+      LosslessVerdict.suspectLossy => (tokens.suspectSoft, tokens.warnLine),
+      _ => (tokens.infoSoft, tokens.info),
     };
 
     final cutoff = data.spectralCutoffHz;
-    final cutoffText =
-        cutoff != null ? '${(cutoff / 1000).toStringAsFixed(1)} kHz' : '—';
+    final cutoffText = cutoff != null
+        ? '${(cutoff / 1000).toStringAsFixed(1)} kHz'
+        : '—';
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: tokens.surface2,
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: background,
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -362,26 +390,23 @@ class _SpectralVerdict extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
+                  style: AppText.title.copyWith(
                     color: color,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
                   ),
-                ),
-              ),
-              Text(
-                'cutoff $cutoffText',
-                style: tokens.mono.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontSize: 12,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            t.verdictCutoff(cutoffText),
+            style: tokens.mono.copyWith(color: cs.onSurface, fontSize: 20),
+          ),
           const SizedBox(height: 6),
           Text(
             t.verdictHeuristicNote,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
+            style: AppText.caption.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
       ),
@@ -398,11 +423,13 @@ class _Header extends StatelessWidget {
     required this.entry,
     required this.displayName,
     required this.tokens,
+    this.analysis,
   });
 
   final LibraryEntry entry;
   final String displayName;
   final AppTokens tokens;
+  final AudioAnalysisData? analysis;
 
   @override
   Widget build(BuildContext context) {
@@ -414,8 +441,17 @@ class _Header extends StatelessWidget {
     ];
     final subtitle = subtitleParts.join(' · ');
 
+    final data = analysis;
+    final specs = <String>[
+      if (entry.format.isNotEmpty) entry.format,
+      if (data != null && data.bitsPerSample > 0) '${data.bitsPerSample}-bit',
+      if (data != null && data.sampleRate > 0)
+        '${(data.sampleRate / 1000).toStringAsFixed(1)} kHz',
+      if (data != null && data.channels > 0) '${data.channels}ch',
+    ].join(' · ');
     final coverPath = entry.coverPath;
-    final hasCover = coverPath != null &&
+    final hasCover =
+        coverPath != null &&
         coverPath.isNotEmpty &&
         File(coverPath).existsSync();
 
@@ -424,23 +460,25 @@ class _Header extends StatelessWidget {
       children: [
         // Album cover (extracted by the library scan), or a placeholder.
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Container(
-            width: 72,
-            height: 72,
+            width: 104,
+            height: 104,
             color: tokens.surface3,
             child: hasCover
                 ? Image.file(
                     File(coverPath),
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => Center(
-                      child: Icon(Icons.music_note,
-                          size: 36, color: cs.primary),
+                      child: Icon(
+                        Icons.music_note,
+                        size: 36,
+                        color: cs.primary,
+                      ),
                     ),
                   )
                 : Center(
-                    child:
-                        Icon(Icons.music_note, size: 36, color: cs.primary),
+                    child: Icon(Icons.music_note, size: 36, color: cs.primary),
                   ),
           ),
         ),
@@ -453,10 +491,11 @@ class _Header extends StatelessWidget {
                 displayName,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: AppText.title.copyWith(
+                  color: cs.onSurface,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (subtitle.isNotEmpty) ...[
                 const SizedBox(height: 4),
@@ -464,9 +503,16 @@ class _Header extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
+                  style: AppText.caption.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+              if (specs.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  specs,
+                  style: tokens.mono
+                      .merge(AppText.caption)
+                      .copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
             ],
@@ -498,10 +544,10 @@ class _VerifiedBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isVerified = entry.verified;
 
-    final bgColor = isVerified ? tokens.accentSoft : tokens.surface2;
-    final borderColor = isVerified ? tokens.accentLine : cs.outline;
-    final iconColor = isVerified ? cs.primary : tokens.muted2;
-    final textColor = isVerified ? cs.primary : cs.onSurfaceVariant;
+    final bgColor = isVerified ? tokens.accentSoft : tokens.infoSoft;
+    final borderColor = isVerified ? tokens.accentLine : tokens.info;
+    final iconColor = isVerified ? cs.primary : tokens.info;
+    final textColor = isVerified ? cs.primary : tokens.info;
     final badgeIcon = isVerified ? Icons.verified_rounded : Icons.help_outline;
     final badgeLabel = isVerified ? t.verifiedLossless : t.verifiedUnknown;
 
@@ -522,20 +568,18 @@ class _VerifiedBadge extends StatelessWidget {
               children: [
                 Text(
                   badgeLabel,
-                  style: TextStyle(
+                  style: AppText.title.copyWith(
                     color: textColor,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
                   ),
                 ),
                 if (isVerified) ...[
                   const SizedBox(height: 2),
                   Text(
                     entry.format,
-                    style: tokens.mono.copyWith(
-                      color: iconColor,
-                      fontSize: 12,
-                    ),
+                    style: tokens.mono
+                        .merge(AppText.caption)
+                        .copyWith(color: iconColor),
                   ),
                 ],
               ],
@@ -552,11 +596,7 @@ class _VerifiedBadge extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ServeRow extends StatelessWidget {
-  const _ServeRow({
-    required this.t,
-    required this.cs,
-    required this.tokens,
-  });
+  const _ServeRow({required this.t, required this.cs, required this.tokens});
 
   final AppLocalizations t;
   final ColorScheme cs;
@@ -581,10 +621,9 @@ class _ServeRow extends StatelessWidget {
             Expanded(
               child: Text(
                 t.verifiedServeTitle,
-                style: TextStyle(
+                style: AppText.body.copyWith(
                   color: cs.onSurface,
                   fontWeight: FontWeight.w500,
-                  fontSize: 14,
                 ),
               ),
             ),

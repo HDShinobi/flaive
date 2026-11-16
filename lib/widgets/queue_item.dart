@@ -71,8 +71,8 @@ class QueueItem extends ConsumerWidget {
         statusLine = view.alreadyInLibrary
             ? t.queueAlreadyInLibrary
             : view.replacedFakeHiRes
-                ? t.queueReplacedFakeHiRes
-                : t.queueStatusDone;
+            ? t.queueReplacedFakeHiRes
+            : t.queueStatusDone;
       case _ItemState.unknown:
         statusLine = item.status;
     }
@@ -86,9 +86,8 @@ class QueueItem extends ConsumerWidget {
         view.resolvedService!.isNotEmpty) {
       final resolved = view.resolvedService!;
       final requested = view.service;
-      providerLine = (requested != null &&
-              requested.isNotEmpty &&
-              requested != resolved)
+      providerLine =
+          (requested != null && requested.isNotEmpty && requested != resolved)
           ? t.queueDownloadedViaFallback(resolved, requested)
           : t.queueDownloadedVia(resolved);
     }
@@ -100,9 +99,8 @@ class QueueItem extends ConsumerWidget {
         trailing = IconButton(
           icon: Icon(Icons.cancel_outlined, color: scheme.primary),
           tooltip: t.cancel,
-          onPressed: () => unawaited(
-            bridge.cancelDownload(item.itemId).catchError((_) {}),
-          ),
+          onPressed: () =>
+              unawaited(bridge.cancelDownload(item.itemId).catchError((_) {})),
         );
       case _ItemState.finalizing:
         trailing = const SizedBox(
@@ -116,13 +114,17 @@ class QueueItem extends ConsumerWidget {
         trailing = IconButton(
           icon: Icon(Icons.refresh, color: tokens.down),
           tooltip: t.queueStatusFailed,
-          onPressed: () => ref
-              .read(downloadQueueProvider.notifier)
-              .retry(item.itemId),
+          onPressed: () =>
+              ref.read(downloadQueueProvider.notifier).retry(item.itemId),
         );
       case _ItemState.done:
-        trailing = view.alreadyInLibrary &&
-                ref.watch(canDownloadAnywayProvider(item.itemId)).asData?.value == true
+        trailing =
+            view.alreadyInLibrary &&
+                ref
+                        .watch(canDownloadAnywayProvider(item.itemId))
+                        .asData
+                        ?.value ==
+                    true
             ? IconButton(
                 icon: Icon(Icons.download_outlined, color: scheme.primary),
                 tooltip: t.queueDownloadAnyway,
@@ -174,20 +176,39 @@ class QueueItem extends ConsumerWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
+                if (view.track?.qualityBadge case final quality?) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    key: const Key('qualityBadge'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tokens.surface3,
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                    ),
+                    child: Text(
+                      quality,
+                      style: tokens.mono
+                          .merge(AppText.badge)
+                          .copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 3),
                 Text(
                   statusLine,
                   // Allow a couple of lines so a failure reason is readable.
                   maxLines: state == _ItemState.failed ? 3 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: tokens.mono.copyWith(
-                    fontSize: 11,
-                    color: statusColor,
-                  ),
+                  style: tokens.mono
+                      .merge(AppText.badge)
+                      .copyWith(color: statusColor),
                 ),
                 if (providerLine != null) ...[
                   const SizedBox(height: 2),
@@ -195,10 +216,9 @@ class QueueItem extends ConsumerWidget {
                     providerLine,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tokens.mono.copyWith(
-                      fontSize: 10,
-                      color: tokens.muted2,
-                    ),
+                    style: tokens.mono
+                        .merge(AppText.caption)
+                        .copyWith(color: tokens.muted2),
                   ),
                 ],
               ],
@@ -239,9 +259,7 @@ class QueueItem extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
                       widthFactor: item.progress.clamp(0.0, 1.0),
-                      child: Container(
-                        color: tokens.accentSoft,
-                      ),
+                      child: Container(color: tokens.accentSoft),
                     ),
                   ),
                 ),
@@ -280,14 +298,14 @@ class QueueItem extends ConsumerWidget {
 }
 
 Widget _coverPlaceholder(AppTokens tokens) => Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: tokens.surface3,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(Icons.music_note, size: 22, color: tokens.muted2),
-    );
+  width: 46,
+  height: 46,
+  decoration: BoxDecoration(
+    color: tokens.surface3,
+    borderRadius: BorderRadius.circular(8),
+  ),
+  child: Icon(Icons.music_note, size: 22, color: tokens.muted2),
+);
 
 enum _ItemState { downloading, finalizing, done, failed, queued, unknown }
 

@@ -1409,4 +1409,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get serverHelpWebdav => 'Ứng dụng nghe nhạc kết nối qua WebDAV.';
+
+  @override
+  String verdictCutoff(String value) {
+    return 'Ngưỡng cắt $value';
+  }
 }

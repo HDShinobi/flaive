@@ -5,6 +5,7 @@ import '../providers/batch_re_enrich_provider.dart';
 import '../providers/library_busy_provider.dart';
 import '../providers/download_options_provider.dart';
 import '../widgets/batch_re_enrich_panel.dart';
+import '../theme/app_tokens.dart';
 
 import 'download_history_screen.dart';
 import 'library_reorganize_screen.dart';
@@ -77,8 +78,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 onPressed: () => setState(_selected.clear),
               )
             : null,
-        title: Text(
-          _selecting ? t.librarySelectedCount(_selected.length) : t.tabLibrary,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _selecting
+                  ? t.librarySelectedCount(_selected.length)
+                  : t.tabLibrary,
+              style: AppText.pageTitle,
+            ),
+            if (!_selecting && asyncEntries.hasValue)
+              Text(
+                t.libraryCount(asyncEntries.value!.length),
+                style: context.tokens.mono
+                    .merge(AppText.caption)
+                    .copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+          ],
         ),
         actions: [
           PopupMenuButton<LibrarySort>(
@@ -179,16 +197,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               if (entries.isEmpty)
                 Expanded(child: Center(child: Text(t.libraryEmpty)))
               else ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    t.libraryCount(entries.length),
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
                 if (_selecting)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -264,19 +272,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     horizontal: 16,
                     vertical: 4,
                   ),
-                  child: ToggleButtons(
-                    isSelected: [_segment == 0, _segment == 1, _segment == 2],
-                    onPressed: (index) => setState(() => _segment = index),
-                    borderRadius: BorderRadius.circular(8),
-                    constraints: const BoxConstraints(
-                      minHeight: 36,
-                      minWidth: 72,
+                  child: SegmentedButton<int>(
+                    style: SegmentedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      textStyle: AppText.caption,
                     ),
-                    children: [
-                      Text(t.libraryAll),
-                      Text(t.libraryAlbums),
-                      Text(t.librarySingles),
+                    segments: [
+                      ButtonSegment(value: 0, label: Text(t.libraryAll)),
+                      ButtonSegment(value: 1, label: Text(t.libraryAlbums)),
+                      ButtonSegment(value: 2, label: Text(t.librarySingles)),
                     ],
+                    selected: {_segment},
+                    onSelectionChanged: (selection) =>
+                        setState(() => _segment = selection.single),
                   ),
                 ),
                 // Search field
@@ -308,7 +318,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 // List area
                 Expanded(child: _buildList(context, entries)),
                 // Serve banner always at bottom
-                ServeBanner(count: entries.length),
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    extensions: [
+                      context.tokens.copyWith(
+                        accentSoft: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainer,
+                        accentLine: context.tokens.lineSoft,
+                      ),
+                    ],
+                  ),
+                  child: ServeBanner(count: entries.length),
+                ),
               ],
             ],
           );
@@ -324,9 +346,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       return Center(child: Text(t.libraryNoResults));
     }
     switch (_segment) {
-      case 1: return _buildAlbumsView(context, filtered);
-      case 2: return _buildSinglesView(filtered);
-      default: return _buildAllView(filtered);
+      case 1:
+        return _buildAlbumsView(context, filtered);
+      case 2:
+        return _buildSinglesView(filtered);
+      default:
+        return _buildAllView(filtered);
     }
   }
 
@@ -337,13 +362,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  Widget _trackTile(BuildContext context, LibraryEntry entry) => LibraryTrackTile(
-    entry: entry,
-    selected: _selecting ? _selected.contains(entry.path) : null,
-    onSelected: (_) => _toggle(entry),
-    onLongPress: () => _toggle(entry),
-    onTap: () => _selecting ? _toggle(entry) : context.push('/library/verified', extra: entry),
-  );
+  Widget _trackTile(BuildContext context, LibraryEntry entry) =>
+      LibraryTrackTile(
+        entry: entry,
+        selected: _selecting ? _selected.contains(entry.path) : null,
+        onSelected: (_) => _toggle(entry),
+        onLongPress: () => _toggle(entry),
+        onTap: () => _selecting
+            ? _toggle(entry)
+            : context.push('/library/verified', extra: entry),
+      );
 
   Widget _buildAlbumsView(BuildContext context, List<LibraryEntry> entries) {
     // Group entries that have an albumName by (artistName, albumName)
@@ -418,8 +446,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   Widget _buildSinglesView(List<LibraryEntry> entries) {
-    final singles =
-        entries.where((e) => e.albumName == null).toList();
+    final singles = entries.where((e) => e.albumName == null).toList();
     if (singles.isEmpty) {
       return const Center(child: SizedBox.shrink());
     }
@@ -501,15 +528,16 @@ class _AlbumTile extends StatelessWidget {
                       artist,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+                      style: tt.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 2),
                   Text(
                     '${tracks.length} ${tracks.length == 1 ? 'track' : 'tracks'}',
-                    style: tt.labelSmall?.copyWith(
+                    style: AppText.badge.copyWith(
                       color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                      fontSize: 10,
                     ),
                   ),
                 ],
@@ -522,9 +550,13 @@ class _AlbumTile extends StatelessWidget {
   }
 
   Widget _coverPlaceholder(ColorScheme cs) => Container(
-        color: cs.surfaceContainerHigh,
-        child: Center(
-          child: Icon(Icons.album_outlined, size: 36, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-        ),
-      );
+    color: cs.surfaceContainerHigh,
+    child: Center(
+      child: Icon(
+        Icons.album_outlined,
+        size: 36,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+      ),
+    ),
+  );
 }

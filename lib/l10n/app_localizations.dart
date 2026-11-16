@@ -2665,6 +2665,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Player apps connect via WebDAV.'**
   String get serverHelpWebdav;
+
+  /// No description provided for @verdictCutoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Cutoff {value}'**
+  String verdictCutoff(String value);
 }
 
 class _AppLocalizationsDelegate

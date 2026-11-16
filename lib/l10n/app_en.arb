@@ -698,5 +698,7 @@
   "sourcesCompact": "sources",
   "serverConnectFrom": "CONNECT FROM",
   "serverHelpDlna": "TVs and speakers connect via DLNA.",
-  "serverHelpWebdav": "Player apps connect via WebDAV."
+  "serverHelpWebdav": "Player apps connect via WebDAV.",
+  "verdictCutoff": "Cutoff {value}",
+  "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }

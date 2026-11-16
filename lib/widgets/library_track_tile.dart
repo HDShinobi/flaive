@@ -53,7 +53,8 @@ class LibraryTrackTile extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          if (selected != null) Checkbox(value: selected, onChanged: onSelected),
+          if (selected != null)
+            Checkbox(value: selected, onChanged: onSelected),
           _CoverArt(entry: entry, tokens: tokens, cs: cs),
           const SizedBox(width: 12),
           Expanded(
@@ -84,24 +85,31 @@ class LibraryTrackTile extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    _FormatBadge(
-                        label: entry.format, tokens: tokens, cs: cs),
-                    if (quality != null && quality.hasData) ...[
-                      const SizedBox(width: 4),
-                      _QualityBadge(
-                          quality: quality, tokens: tokens, cs: cs),
-                    ],
+                    _QualityBadge(
+                      format: entry.format,
+                      quality: quality?.hasData == true ? quality : null,
+                      tokens: tokens,
+                      cs: cs,
+                    ),
                     if (entry.tagsFromFallback) ...[
                       const SizedBox(width: 4),
                       _TagsMissingBadge(tokens: tokens, cs: cs),
                     ],
                     if (entry.verified) ...[
                       const SizedBox(width: 4),
-                      Icon(
-                        Icons.verified,
+                      Container(
                         key: const Key('verifiedCheck'),
-                        size: 14,
-                        color: cs.primary,
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check,
+                          size: 13,
+                          color: tokens.accentInk,
+                        ),
                       ),
                     ],
                   ],
@@ -124,8 +132,11 @@ class LibraryTrackTile extends ConsumerWidget {
 // Cover art — local file extracted by Go scanner, fallback to placeholder
 // ---------------------------------------------------------------------------
 class _CoverArt extends StatelessWidget {
-  const _CoverArt(
-      {required this.entry, required this.tokens, required this.cs});
+  const _CoverArt({
+    required this.entry,
+    required this.tokens,
+    required this.cs,
+  });
 
   final LibraryEntry entry;
   final AppTokens tokens;
@@ -134,11 +145,15 @@ class _CoverArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coverPath = entry.coverPath;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 48,
-        height: 48,
+    return Container(
+      width: 52,
+      height: 52,
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: tokens.lineSoft),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
         child: coverPath != null
             ? Image.file(
                 File(coverPath),
@@ -151,47 +166,11 @@ class _CoverArt extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: tokens.surface3,
-        child: Center(
-          child: Icon(Icons.music_note, size: 22, color: cs.onSurfaceVariant),
-        ),
-      );
-}
-
-// ---------------------------------------------------------------------------
-// Format badge pill
-// ---------------------------------------------------------------------------
-class _FormatBadge extends StatelessWidget {
-  const _FormatBadge(
-      {required this.label, required this.tokens, required this.cs});
-
-  final String label;
-  final AppTokens tokens;
-  final ColorScheme cs;
-
-  @override
-  Widget build(BuildContext context) {
-    final isFlac = label == 'FLAC';
-    return Container(
-      key: const Key('formatBadge'),
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      decoration: BoxDecoration(
-        color: isFlac ? tokens.accentSoft : tokens.surface2,
-        border: Border.all(
-            color: isFlac ? tokens.accentLine : cs.outline, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isFlac ? cs.primary : cs.onSurfaceVariant,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
+    color: tokens.surface3,
+    child: Center(
+      child: Icon(Icons.music_note, size: 22, color: cs.onSurfaceVariant),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -215,12 +194,7 @@ class _TagsMissingBadge extends StatelessWidget {
       ),
       child: Text(
         'tags missing',
-        style: TextStyle(
-          color: tokens.down,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
+        style: AppText.badge.copyWith(color: tokens.down),
       ),
     );
   }
@@ -230,39 +204,45 @@ class _TagsMissingBadge extends StatelessWidget {
 // Quality badge pill — "24/96" for lossless, "44.1k" for lossy
 // ---------------------------------------------------------------------------
 class _QualityBadge extends StatelessWidget {
-  const _QualityBadge(
-      {required this.quality, required this.tokens, required this.cs});
+  const _QualityBadge({
+    required this.format,
+    required this.quality,
+    required this.tokens,
+    required this.cs,
+  });
 
-  final AudioQuality quality;
+  final AudioQuality? quality;
+  final String format;
   final AppTokens tokens;
   final ColorScheme cs;
 
   String get _label {
+    final quality = this.quality;
+    if (quality == null) return format;
     final khz = quality.sampleRate / 1000;
     final kStr = khz == khz.truncateToDouble()
         ? khz.toInt().toString()
         : khz.toStringAsFixed(1);
-    if (quality.bitDepth > 0) return '${quality.bitDepth}/$kStr';
-    return '${kStr}k';
+    if (quality.bitDepth > 0) return '$format · ${quality.bitDepth}/$kStr';
+    return '$format · ${kStr}k';
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      key: const Key('qualityBadge'),
+      key: quality != null ? const Key('qualityBadge') : null,
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: tokens.surface2,
-        border: Border.all(color: cs.outline, width: 1),
-        borderRadius: BorderRadius.circular(4),
+        color: tokens.surface3,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(
-        _label,
-        style: tokens.mono.copyWith(
-          color: cs.onSurfaceVariant,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
+      child: KeyedSubtree(
+        key: const Key('formatBadge'),
+        child: Text(
+          _label,
+          style: tokens.mono
+              .merge(AppText.badge)
+              .copyWith(color: cs.onSurfaceVariant),
         ),
       ),
     );

@@ -698,5 +698,7 @@
   "sourcesCompact": "nguồn",
   "serverConnectFrom": "KẾT NỐI TỪ",
   "serverHelpDlna": "TV và loa kết nối qua DLNA.",
-  "serverHelpWebdav": "Ứng dụng nghe nhạc kết nối qua WebDAV."
+  "serverHelpWebdav": "Ứng dụng nghe nhạc kết nối qua WebDAV.",
+  "verdictCutoff": "Ngưỡng cắt {value}",
+  "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }
