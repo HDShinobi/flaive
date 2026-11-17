@@ -115,6 +115,8 @@ ThemeData appTheme() {
   // Built from titleLarge so the title keeps the platform font family and color.
   return base.copyWith(
     appBarTheme: AppBarTheme(
+      // Flat header like the boards: no green surface tint when content scrolls under.
+      scrolledUnderElevation: 0,
       // Raw textTheme has no geometry yet (sizes are added at Theme.of), so set 22 here.
       titleTextStyle: base.textTheme.titleLarge!.copyWith(
         fontSize: 22,
