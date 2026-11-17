@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
@@ -14,6 +16,10 @@ import 'services/app_log.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   installAppLogHandlers(AppLog.instance);
+  LicenseRegistry.addLicense(() async* {
+    final ofl = await rootBundle.loadString('assets/fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['JetBrains Mono'], ofl);
+  });
   final container = ProviderContainer();
   await container.read(localeProvider.notifier).load();
   // Load the first-launch flag before the router is built so its initial

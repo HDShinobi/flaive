@@ -545,7 +545,7 @@ abstract class AppLocalizations {
   /// No description provided for @serveBannerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Serving via DLNA · WebDAV'**
+  /// **'Serving via DLNA'**
   String get serveBannerTitle;
 
   /// No description provided for @serveBannerSubtitle.
@@ -2659,12 +2659,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TVs and speakers connect via DLNA.'**
   String get serverHelpDlna;
-
-  /// No description provided for @serverHelpWebdav.
-  ///
-  /// In en, this message translates to:
-  /// **'Player apps connect via WebDAV.'**
-  String get serverHelpWebdav;
 
   /// No description provided for @verdictCutoff.
   ///

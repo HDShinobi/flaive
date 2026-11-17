@@ -237,7 +237,7 @@ class _ServerBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpace.sm),
         Text(
-          t.serverHelpWebdav,
+          t.serverHint,
           style: AppText.body.copyWith(color: cs.onSurfaceVariant),
         ),
       ],

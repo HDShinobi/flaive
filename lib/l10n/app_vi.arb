@@ -88,7 +88,7 @@
   "libraryAll": "Tất cả",
   "libraryAlbums": "Album",
   "librarySingles": "Single",
-  "serveBannerTitle": "Phát qua DLNA · WebDAV",
+  "serveBannerTitle": "Phát qua DLNA",
   "serveBannerSubtitle": "{count} bài cho thiết bị khác",
   "@serveBannerSubtitle": {
     "placeholders": {
@@ -698,7 +698,6 @@
   "sourcesCompact": "nguồn",
   "serverConnectFrom": "KẾT NỐI TỪ",
   "serverHelpDlna": "TV và loa kết nối qua DLNA.",
-  "serverHelpWebdav": "Ứng dụng nghe nhạc kết nối qua WebDAV.",
   "verdictCutoff": "Ngưỡng cắt {value}",
   "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }

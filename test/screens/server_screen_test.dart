@@ -73,7 +73,7 @@ void main() {
       expect(find.text('Flaive'), findsOneWidget);
       expect(find.text('CONNECT FROM'), findsOneWidget);
       expect(find.text('TVs and speakers connect via DLNA.'), findsOneWidget);
-      expect(find.text('Player apps connect via WebDAV.'), findsOneWidget);
+      expect(find.text('Find this device in your DLNA player (PureBit, UAPP, Poweramp).'), findsOneWidget);
     });
   });
 }

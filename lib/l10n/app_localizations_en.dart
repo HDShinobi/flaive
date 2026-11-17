@@ -237,7 +237,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get librarySingles => 'Singles';
 
   @override
-  String get serveBannerTitle => 'Serving via DLNA · WebDAV';
+  String get serveBannerTitle => 'Serving via DLNA';
 
   @override
   String serveBannerSubtitle(int count) {
@@ -1410,9 +1410,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverHelpDlna => 'TVs and speakers connect via DLNA.';
-
-  @override
-  String get serverHelpWebdav => 'Player apps connect via WebDAV.';
 
   @override
   String verdictCutoff(String value) {

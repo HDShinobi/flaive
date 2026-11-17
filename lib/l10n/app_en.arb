@@ -88,7 +88,7 @@
   "libraryAll": "All",
   "libraryAlbums": "Albums",
   "librarySingles": "Singles",
-  "serveBannerTitle": "Serving via DLNA · WebDAV",
+  "serveBannerTitle": "Serving via DLNA",
   "serveBannerSubtitle": "{count} tracks to other devices",
   "@serveBannerSubtitle": {
     "placeholders": {
@@ -698,7 +698,6 @@
   "sourcesCompact": "sources",
   "serverConnectFrom": "CONNECT FROM",
   "serverHelpDlna": "TVs and speakers connect via DLNA.",
-  "serverHelpWebdav": "Player apps connect via WebDAV.",
   "verdictCutoff": "Cutoff {value}",
   "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }

@@ -237,7 +237,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get librarySingles => 'Single';
 
   @override
-  String get serveBannerTitle => 'Phát qua DLNA · WebDAV';
+  String get serveBannerTitle => 'Phát qua DLNA';
 
   @override
   String serveBannerSubtitle(int count) {
@@ -1406,9 +1406,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get serverHelpDlna => 'TV và loa kết nối qua DLNA.';
-
-  @override
-  String get serverHelpWebdav => 'Ứng dụng nghe nhạc kết nối qua WebDAV.';
 
   @override
   String verdictCutoff(String value) {

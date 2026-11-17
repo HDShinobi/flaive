@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:io';
 import 'dart:async';
 
@@ -71,8 +72,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // Room for the 28px title plus the mono file-count line at large text scales.
-        toolbarHeight: 72,
+        // Room for the 28px title plus the 12px mono count line, scaled with text size.
+        toolbarHeight: math.max(
+          72,
+          MediaQuery.textScalerOf(context).scale(28) * 1.25 +
+              MediaQuery.textScalerOf(context).scale(12) * 1.4 +
+              8,
+        ),
         leading: _selecting
             ? IconButton(
                 icon: const Icon(Icons.close),
