@@ -40,7 +40,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
     final startError = ref.watch(serverStartErrorProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.tabServer)),
+      appBar: AppBar(title: Text(t.tabServer, style: AppText.pageTitle)),
       body: serverAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => startError != null
@@ -81,150 +81,166 @@ class _ServerBody extends ConsumerWidget {
     final startError = ref.watch(serverStartErrorProvider);
     final bool running = status.running;
     final String? url = status.url;
+    final folderPath = ref.watch(downloadDirProvider).value ?? '';
 
-    final downloadDirAsync = ref.watch(downloadDirProvider);
-    final String folderPath = downloadDirAsync.value ?? '';
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Status card
-          Container(
-            decoration: BoxDecoration(
-              color: running ? tokens.accentSoft : null,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: running ? tokens.accentLine : tokens.muted2,
+    final cs = Theme.of(context).colorScheme;
+    return ListView(
+      padding: const EdgeInsets.all(AppSpace.page),
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: tokens.lineSoft),
+          ),
+          padding: const EdgeInsets.all(AppSpace.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: running ? cs.primary : tokens.muted2,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          running ? t.serverRunning : t.serverStopped,
+                          style: AppText.section,
+                        ),
+                        if (status.name != null) ...[
+                          const SizedBox(height: AppSpace.xs),
+                          Text(
+                            status.name!,
+                            style: AppText.body.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
+              if (running && url != null) ...[
+                const SizedBox(height: AppSpace.lg),
                 Container(
-                  width: 10,
-                  height: 10,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: running ? tokens.accentLine : tokens.muted2,
+                    color: cs.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  running ? t.serverRunning : t.serverStopped,
-                  style: TextStyle(
-                    color: running
-                        ? Theme.of(context).colorScheme.primary
-                        : tokens.muted2,
-                    fontWeight: FontWeight.w600,
+                  padding: const EdgeInsets.only(
+                    left: AppSpace.md,
+                    right: AppSpace.xs,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          url,
+                          style: AppText.body.merge(tokens.mono),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: t.extensionVerificationCopyLink,
+                        icon: const Icon(Icons.copy, size: 18),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: url));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(t.serverCopied)),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
-
-          if (running && url != null) ...[
-            const SizedBox(height: 20),
-
-            // Address row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  t.serverAddress,
-                  style: TextStyle(color: tokens.muted2, fontSize: 13),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    url,
-                    style: tokens.mono.copyWith(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 18),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: url));
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(t.serverCopied)));
-                  },
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
+              if (running) ...[
+                const SizedBox(height: AppSpace.sm),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.serverFolder,
+                      style: AppText.caption.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.sm),
+                    Expanded(
+                      child: Text(
+                        folderPath,
+                        style: AppText.caption.merge(tokens.mono),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // Folder row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.serverFolder,
-                  style: TextStyle(color: tokens.muted2, fontSize: 13),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(folderPath, style: const TextStyle(fontSize: 13)),
-                ),
-              ],
-            ),
-          ],
-
-          const Spacer(),
-
-          if (!running && startError != null) ...[
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  startError,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onErrorContainer,
+              if (!running && startError != null) ...[
+                const SizedBox(height: AppSpace.lg),
+                Card(
+                  color: cs.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpace.lg),
+                    child: Text(
+                      startError,
+                      style: AppText.body.copyWith(color: cs.onErrorContainer),
+                    ),
                   ),
                 ),
+              ],
+              const SizedBox(height: AppSpace.lg),
+              FilledButton(
+                onPressed: serverAsync.isLoading
+                    ? null
+                    : () {
+                        if (running) {
+                          ref.read(serverProvider.notifier).stop();
+                        } else {
+                          ref.read(serverProvider.notifier).start();
+                        }
+                      },
+                child: serverAsync.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(running ? t.serverStop : t.serverStart),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // Start / Stop button
-          FilledButton(
-            onPressed: serverAsync.isLoading
-                ? null
-                : () {
-                    if (running) {
-                      ref.read(serverProvider.notifier).stop();
-                    } else {
-                      ref.read(serverProvider.notifier).start();
-                    }
-                  },
-            child: serverAsync.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(running ? t.serverStop : t.serverStart),
+            ],
           ),
-
-          const SizedBox(height: 12),
-
-          // Hint line
-          Text(
-            t.serverHint,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: tokens.muted2),
+        ),
+        const SizedBox(height: AppSpace.xl),
+        Text(
+          t.serverConnectFrom,
+          style: AppText.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+            color: cs.onSurfaceVariant,
           ),
-
-          const SizedBox(height: 8),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpace.md),
+        Text(
+          t.serverHelpDlna,
+          style: AppText.body.copyWith(color: cs.onSurfaceVariant),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        Text(
+          t.serverHint,
+          style: AppText.body.copyWith(color: cs.onSurfaceVariant),
+        ),
+      ],
     );
   }
 }

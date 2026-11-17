@@ -237,7 +237,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get librarySingles => 'Single';
 
   @override
-  String get serveBannerTitle => 'Phát qua DLNA · WebDAV';
+  String get serveBannerTitle => 'Phát qua DLNA';
 
   @override
   String serveBannerSubtitle(int count) {
@@ -1362,5 +1362,53 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String libraryScanFailureCount(int count) {
     return 'Không đọc được $count tệp';
+  }
+
+  @override
+  String get queueEmptyTitle => 'Chưa có bài nào đang tải';
+
+  @override
+  String get queueEmptyBody =>
+      'Tìm bài hát, album hoặc dán link. Mỗi file tải về sẽ được kiểm tra phổ.';
+
+  @override
+  String get queueEmptyAction => 'Tìm bài hát';
+
+  @override
+  String get settingsGroupSources => 'Nguồn';
+
+  @override
+  String get settingsGroupDownloads => 'Tải về';
+
+  @override
+  String get settingsGroupQuality => 'Chất lượng & xác minh';
+
+  @override
+  String get settingsGroupApp => 'Ứng dụng';
+
+  @override
+  String get aboutTitle => 'Giới thiệu';
+
+  @override
+  String get aboutLicenses => 'Giấy phép';
+
+  @override
+  String get aboutGitHub => 'GitHub';
+
+  @override
+  String get linkOpenFailed => 'Không thể mở liên kết';
+
+  @override
+  String get sourcesCompact => 'nguồn';
+
+  @override
+  String get serverConnectFrom => 'KẾT NỐI TỪ';
+
+  @override
+  String get serverHelpDlna => 'TV và loa kết nối qua DLNA.';
+
+  @override
+  String verdictCutoff(String value) {
+    return 'Ngưỡng cắt $value';
   }
 }

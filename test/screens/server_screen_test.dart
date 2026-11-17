@@ -37,8 +37,9 @@ void main() {
     testWidgets('stopped state shows "Start server" button', (tester) async {
       await tester.pumpWidget(
         buildServerScreen([
-          serverProvider
-              .overrideWith(() => _FakeServerController(ServerStatus.stopped)),
+          serverProvider.overrideWith(
+            () => _FakeServerController(ServerStatus.stopped),
+          ),
           downloadDirProvider.overrideWith((_) async => '/test/downloads'),
         ]),
       );
@@ -48,8 +49,9 @@ void main() {
       expect(find.text('Stop server'), findsNothing);
     });
 
-    testWidgets('running state shows URL and "Stop server" button',
-        (tester) async {
+    testWidgets('running state shows URL and "Stop server" button', (
+      tester,
+    ) async {
       const running = ServerStatus(
         running: true,
         url: 'http://10.0.0.5:8200/',
@@ -58,8 +60,7 @@ void main() {
 
       await tester.pumpWidget(
         buildServerScreen([
-          serverProvider
-              .overrideWith(() => _FakeServerController(running)),
+          serverProvider.overrideWith(() => _FakeServerController(running)),
           downloadDirProvider.overrideWith((_) async => '/test/downloads'),
         ]),
       );
@@ -68,6 +69,11 @@ void main() {
       expect(find.text('Stop server'), findsOneWidget);
       expect(find.text('Start server'), findsNothing);
       expect(find.textContaining('10.0.0.5:8200'), findsOneWidget);
+      expect(find.text('/test/downloads'), findsOneWidget);
+      expect(find.text('Flaive'), findsOneWidget);
+      expect(find.text('CONNECT FROM'), findsOneWidget);
+      expect(find.text('TVs and speakers connect via DLNA.'), findsOneWidget);
+      expect(find.text('Find this device in your DLNA player (PureBit, UAPP, Poweramp).'), findsOneWidget);
     });
   });
 }

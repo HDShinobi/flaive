@@ -11,7 +11,7 @@ enum TrackDownloadState { idle, queued, active, done, failed }
 /// A branded list-row widget for a single search result track.
 ///
 /// [qualityHint] is optional: `null` renders no badge; non-null renders a pill
-/// badge. `'HI-RES'` uses accent colours; any other value uses muted colours.
+/// badge with neutral mono styling.
 ///
 /// Multi-select support:
 /// - [selectionMode] when true, shows a checkbox instead of cover art and hides
@@ -75,10 +75,7 @@ class TrackTile extends StatelessWidget {
         children: [
           // Leading: checkbox in selection mode, cover art otherwise
           if (selectionMode)
-            Checkbox(
-              value: selected,
-              onChanged: (_) => onSelectToggle?.call(),
-            )
+            Checkbox(value: selected, onChanged: (_) => onSelectToggle?.call())
           else
             _CoverArt(track: track),
           const SizedBox(width: 12),
@@ -101,8 +98,18 @@ class TrackTile extends StatelessWidget {
                     if (downloaded) ...[
                       const SizedBox(width: 6),
                       Tooltip(
-                        message: Localizations.of<AppLocalizations>(context, AppLocalizations)?.historyDownloaded ?? '',
-                        child: Icon(Icons.download_done, key: const Key('historyDownloaded'), size: 14, color: cs.primary),
+                        message:
+                            Localizations.of<AppLocalizations>(
+                              context,
+                              AppLocalizations,
+                            )?.historyDownloaded ??
+                            '',
+                        child: Icon(
+                          Icons.download_done,
+                          key: const Key('historyDownloaded'),
+                          size: 14,
+                          color: cs.primary,
+                        ),
                       ),
                     ],
                     if (qualityHint != null) ...[
@@ -131,10 +138,16 @@ class TrackTile extends StatelessWidget {
           if (!selectionMode && onCopyLink != null && link != null)
             PopupMenuButton<String>(
               onSelected: (_) => onCopyLink!(),
-              itemBuilder: (_) => [PopupMenuItem(
-                value: 'copy',
-                child: Text(AppLocalizations.of(context).copyServiceLink(serviceTrackLinkName(link))),
-              )],
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Text(
+                    AppLocalizations.of(
+                      context,
+                    ).copyServiceLink(serviceTrackLinkName(link)),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -185,8 +198,7 @@ class TrackTile extends StatelessWidget {
       decoration: TextDecoration.underline,
       decorationColor: cs.primary,
     );
-    final hasAlbum =
-        track.albumName != null && track.albumName!.isNotEmpty;
+    final hasAlbum = track.albumName != null && track.albumName!.isNotEmpty;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -196,13 +208,19 @@ class TrackTile extends StatelessWidget {
               ? GestureDetector(
                   key: const Key('trackArtist'),
                   onTap: onArtistTap,
-                  child: Text(track.artists,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: linkStyle),
+                  child: Text(
+                    track.artists,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: linkStyle,
+                  ),
                 )
-              : Text(track.artists,
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: plainStyle),
+              : Text(
+                  track.artists,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: plainStyle,
+                ),
         ),
         if (hasAlbum) ...[
           Text(' · ', style: plainStyle),
@@ -211,15 +229,19 @@ class TrackTile extends StatelessWidget {
                 ? GestureDetector(
                     key: const Key('trackAlbum'),
                     onTap: onAlbumTap,
-                    child: Text(track.albumName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: linkStyle),
+                    child: Text(
+                      track.albumName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: linkStyle,
+                    ),
                   )
-                : Text(track.albumName!,
+                : Text(
+                    track.albumName!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: plainStyle),
+                    style: plainStyle,
+                  ),
           ),
         ],
       ],
@@ -283,11 +305,7 @@ class _InitialFallback extends StatelessWidget {
       child: Center(
         child: Text(
           initial,
-          style: TextStyle(
-            color: cs.onSurfaceVariant,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppText.section.copyWith(color: cs.onSurfaceVariant),
         ),
       ),
     );
@@ -298,7 +316,10 @@ class _InitialFallback extends StatelessWidget {
 // Download state icon
 // ---------------------------------------------------------------------------
 class _DownloadStateIcon extends StatelessWidget {
-  const _DownloadStateIcon({required this.downloadState, required this.onDownload});
+  const _DownloadStateIcon({
+    required this.downloadState,
+    required this.onDownload,
+  });
 
   final TrackDownloadState downloadState;
   final VoidCallback onDownload;
@@ -308,30 +329,33 @@ class _DownloadStateIcon extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return switch (downloadState) {
       TrackDownloadState.idle => IconButton(
-          icon: const Icon(Icons.download_outlined),
-          onPressed: onDownload,
-          tooltip: Localizations.of<AppLocalizations>(context, AppLocalizations)?.download,
-        ),
+        icon: const Icon(Icons.download_outlined),
+        onPressed: onDownload,
+        tooltip: Localizations.of<AppLocalizations>(
+          context,
+          AppLocalizations,
+        )?.download,
+      ),
       TrackDownloadState.queued => Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(Icons.schedule, size: 20, color: cs.onSurfaceVariant),
-        ),
+        padding: const EdgeInsets.all(12),
+        child: Icon(Icons.schedule, size: 20, color: cs.onSurfaceVariant),
+      ),
       TrackDownloadState.active => const Padding(
-          padding: EdgeInsets.all(12),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
+      ),
       TrackDownloadState.done => Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(Icons.check_circle_outline, size: 20, color: cs.primary),
-        ),
+        padding: const EdgeInsets.all(12),
+        child: Icon(Icons.check_circle_outline, size: 20, color: cs.primary),
+      ),
       TrackDownloadState.failed => Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(Icons.error_outline, size: 20, color: cs.error),
-        ),
+        padding: const EdgeInsets.all(12),
+        child: Icon(Icons.error_outline, size: 20, color: cs.error),
+      ),
     };
   }
 }
@@ -352,27 +376,18 @@ class _QualityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHiRes = label == 'HI-RES';
-    final bg = isHiRes ? tokens.accentSoft : tokens.surface2;
-    final textColor = isHiRes ? cs.primary : cs.onSurfaceVariant;
-    final borderColor = isHiRes ? tokens.accentLine : cs.outline;
-
     return Container(
       key: const Key('qualityBadge'),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: borderColor, width: 1),
-        borderRadius: BorderRadius.circular(4),
+        color: tokens.surface3,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
+        style: tokens.mono
+            .merge(AppText.badge)
+            .copyWith(color: cs.onSurfaceVariant),
       ),
     );
   }

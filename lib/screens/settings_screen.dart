@@ -8,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lossless_music_download/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../widgets/brand_mark.dart';
 import '../models/installed_extension.dart';
 import '../providers/download_dir_provider.dart';
 import '../providers/download_options_provider.dart';
@@ -15,6 +18,7 @@ import '../providers/extensions_provider.dart';
 import '../providers/home_feed_provider.dart';
 import '../services/download_paths.dart';
 import '../services/update_checker.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/update_dialog.dart';
 import 'download_file_settings_screen.dart';
 import 'lyrics_settings_screen.dart';
@@ -51,8 +55,9 @@ class SettingsScreen extends ConsumerWidget {
       // runtime permission instead, otherwise the request never resolves and
       // the picker keeps asking forever.
       final sdkInt = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
-      final permission =
-          sdkInt >= 30 ? Permission.manageExternalStorage : Permission.storage;
+      final permission = sdkInt >= 30
+          ? Permission.manageExternalStorage
+          : Permission.storage;
 
       var status = await permission.status;
       if (!status.isGranted) {
@@ -162,194 +167,229 @@ class SettingsScreen extends ConsumerWidget {
     final folderAsync = ref.watch(downloadDirProvider);
     final homeFeedSource = ref.watch(homeFeedSourceProvider);
     final extensions = ref.watch(extensionsProvider).value ?? const [];
-    final homeFeedCapable =
-        extensions.where((e) => e.enabled && e.hasHomeFeed).toList();
+    final homeFeedCapable = extensions
+        .where((e) => e.enabled && e.hasHomeFeed)
+        .toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.tabSettings)),
+      appBar: AppBar(title: Text(t.tabSettings, style: AppText.pageTitle)),
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.page,
+          0,
+          AppSpace.page,
+          AppSpace.xl,
+        ),
         children: [
-          // Sources
-          ListTile(
-            leading: const Icon(Icons.extension_outlined),
-            title: Text(t.sourcesTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/sources'),
-          ),
-
-          // Fallback sources
-          ListTile(
-            leading: const Icon(Icons.swap_horiz_outlined),
-            title: Text(t.fallbackSourcesTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/fallback-sources'),
-          ),
-
-          // Home feed ("Nguồn gợi ý") source selector
-          ListTile(
-            leading: const Icon(Icons.dynamic_feed_outlined),
-            title: Text(t.homeFeedSourceTitle),
-            subtitle: Text(
-              homeFeedCapable.isEmpty
-                  ? t.homeFeedSourceSubtitle
-                  : _homeFeedSourceLabel(t, homeFeedSource, homeFeedCapable),
-            ),
-            enabled: homeFeedCapable.isNotEmpty,
-            trailing: homeFeedCapable.isEmpty
-                ? null
-                : const Icon(Icons.chevron_right),
-            onTap: homeFeedCapable.isEmpty
-                ? null
-                : () => _showHomeFeedSourceChooser(
-                      context,
-                      ref,
-                      t,
-                      homeFeedSource,
-                      homeFeedCapable,
-                    ),
-          ),
-
-          // Check for app updates (GitHub Releases)
-          ListTile(
-            leading: const Icon(Icons.system_update_outlined),
-            title: Text(t.settingCheckUpdate),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _checkForUpdates(context),
-          ),
-
-          const Divider(height: 1),
-
-          // Download folder (tap to change)
-          folderAsync.when(
-            loading: () => ListTile(
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(t.settingDownloadFolder),
-              subtitle: const Text('…'),
-            ),
-            error: (_, _) => ListTile(
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(t.settingDownloadFolder),
-              trailing: const Icon(Icons.edit_outlined),
-              onTap: () => _pickDownloadFolder(context, ref),
-            ),
-            data: (path) => ListTile(
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(t.settingDownloadFolder),
-              subtitle: Text(
-                path,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontFamily: 'monospace'),
+          _SettingsGroup(
+            title: t.settingsGroupSources,
+            children: [
+              // Sources
+              ListTile(
+                leading: const Icon(Icons.extension_outlined),
+                title: Text(t.sourcesTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/sources'),
               ),
-              trailing: const Icon(Icons.edit_outlined),
-              onTap: () => _pickDownloadFolder(context, ref),
-            ),
-          ),
 
-          ListTile(
-            leading: const Icon(Icons.drive_file_rename_outline),
-            title: Text(t.fileSettingsTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const DownloadFileSettingsScreen())),
-          ),
+              // Fallback sources
+              ListTile(
+                leading: const Icon(Icons.swap_horiz_outlined),
+                title: Text(t.fallbackSourcesTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/fallback-sources'),
+              ),
 
-          ListTile(
-            leading: const Icon(Icons.downloading_outlined),
-            title: Text(t.settingSimultaneousDownloads),
-            trailing: DropdownButton<int>(
-              value: ref.watch(simultaneousDownloadsProvider),
-              items: [for (final n in [1, 2, 3]) DropdownMenuItem(value: n, child: Text('$n'))],
-              onChanged: (n) { if (n != null) ref.read(simultaneousDownloadsProvider.notifier).set(n); },
-            ),
+              // Home feed ("Nguồn gợi ý") source selector
+              ListTile(
+                leading: const Icon(Icons.dynamic_feed_outlined),
+                title: Text(t.homeFeedSourceTitle),
+                subtitle: Text(
+                  homeFeedCapable.isEmpty
+                      ? t.homeFeedSourceSubtitle
+                      : _homeFeedSourceLabel(
+                          t,
+                          homeFeedSource,
+                          homeFeedCapable,
+                        ),
+                ),
+                enabled: homeFeedCapable.isNotEmpty,
+                trailing: homeFeedCapable.isEmpty
+                    ? null
+                    : const Icon(Icons.chevron_right),
+                onTap: homeFeedCapable.isEmpty
+                    ? null
+                    : () => _showHomeFeedSourceChooser(
+                        context,
+                        ref,
+                        t,
+                        homeFeedSource,
+                        homeFeedCapable,
+                      ),
+              ),
+            ],
           ),
-          SwitchListTile(
-            secondary: const Icon(Icons.wifi),
-            title: Text(t.settingWifiOnly),
-            subtitle: Text(t.settingWifiOnlyDescription),
-            value: ref.watch(wifiOnlyProvider),
-            onChanged: ref.read(wifiOnlyProvider.notifier).set,
+          _SettingsGroup(
+            title: t.settingsGroupDownloads,
+            children: [
+              // Download folder (tap to change)
+              folderAsync.when(
+                loading: () => ListTile(
+                  leading: const Icon(Icons.folder_outlined),
+                  title: Text(t.settingDownloadFolder),
+                  subtitle: const Text('…'),
+                ),
+                error: (_, _) => ListTile(
+                  leading: const Icon(Icons.folder_outlined),
+                  title: Text(t.settingDownloadFolder),
+                  trailing: const Icon(Icons.edit_outlined),
+                  onTap: () => _pickDownloadFolder(context, ref),
+                ),
+                data: (path) => ListTile(
+                  leading: const Icon(Icons.folder_outlined),
+                  title: Text(t.settingDownloadFolder),
+                  subtitle: Text(
+                    path,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.merge(context.tokens.mono),
+                  ),
+                  trailing: const Icon(Icons.edit_outlined),
+                  onTap: () => _pickDownloadFolder(context, ref),
+                ),
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.drive_file_rename_outline),
+                title: Text(t.fileSettingsTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const DownloadFileSettingsScreen(),
+                  ),
+                ),
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.downloading_outlined),
+                title: Text(t.settingSimultaneousDownloads),
+                trailing: DropdownButton<int>(
+                  value: ref.watch(simultaneousDownloadsProvider),
+                  items: [
+                    for (final n in [1, 2, 3])
+                      DropdownMenuItem(value: n, child: Text('$n')),
+                  ],
+                  onChanged: (n) {
+                    if (n != null) {
+                      ref.read(simultaneousDownloadsProvider.notifier).set(n);
+                    }
+                  },
+                ),
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.wifi),
+                title: Text(t.settingWifiOnly),
+                subtitle: Text(t.settingWifiOnlyDescription),
+                value: ref.watch(wifiOnlyProvider),
+                onChanged: ref.read(wifiOnlyProvider.notifier).set,
+              ),
+
+              // Folder layout
+              ListTile(
+                leading: const Icon(Icons.folder_copy_outlined),
+                title: Text(t.settingFolderLayout),
+                subtitle: Text(_folderLayoutLabel(t, folderLayout)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _pickFolderLayout(context, ref, folderLayout),
+              ),
+
+              // Ask before download
+              SwitchListTile(
+                secondary: const Icon(Icons.tune_outlined),
+                title: Text(t.settingAskBeforeDownload),
+                subtitle: Text(t.settingAskBeforeDownloadDesc),
+                value: askBefore,
+                onChanged: (v) =>
+                    ref.read(askBeforeDownloadProvider.notifier).set(v),
+              ),
+
+              // Embed metadata
+              SwitchListTile(
+                secondary: const Icon(Icons.tag),
+                title: Text(t.settingEmbedMetadata),
+                subtitle: Text(t.settingEmbedMetadataDesc),
+                value: embedMeta,
+                onChanged: (v) =>
+                    ref.read(embedMetadataProvider.notifier).set(v),
+              ),
+
+              // Embed cover art
+              SwitchListTile(
+                secondary: const Icon(Icons.image_outlined),
+                title: Text(t.settingEmbedCover),
+                subtitle: Text(t.settingEmbedCoverDesc),
+                value: embedCover,
+                onChanged: (v) => ref.read(embedCoverProvider.notifier).set(v),
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.lyrics_outlined),
+                title: Text(t.lyricsSettingsTitle),
+                subtitle: Text(t.lyricsSettingsDescription),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LyricsSettingsScreen(),
+                  ),
+                ),
+              ),
+            ],
           ),
+          _SettingsGroup(
+            title: t.settingsGroupQuality,
+            children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.high_quality_outlined),
+                title: Text(t.downloadRedownloadFakeHiRes),
+                subtitle: Text(t.downloadRedownloadFakeHiResSubtitle),
+                value: ref.watch(redownloadFakeHiResProvider),
+                onChanged: ref.read(redownloadFakeHiResProvider.notifier).set,
+              ),
 
-          // Folder layout
-          ListTile(
-            leading: const Icon(Icons.folder_copy_outlined),
-            title: Text(t.settingFolderLayout),
-            subtitle: Text(_folderLayoutLabel(t, folderLayout)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _pickFolderLayout(context, ref, folderLayout),
+              ListTile(
+                leading: const Icon(Icons.transform),
+                title: Text(t.downloadAutoConvert),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AutoConvertSettingsScreen(),
+                  ),
+                ),
+              ),
+            ],
           ),
+          _SettingsGroup(
+            title: t.settingsGroupApp,
+            children: [
+              // Check for app updates (GitHub Releases)
+              ListTile(
+                leading: const Icon(Icons.system_update_outlined),
+                title: Text(t.settingCheckUpdate),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _checkForUpdates(context),
+              ),
 
-          const Divider(height: 1),
-
-          SwitchListTile(
-            secondary: const Icon(Icons.high_quality_outlined),
-            title: Text(t.downloadRedownloadFakeHiRes),
-            subtitle: Text(t.downloadRedownloadFakeHiResSubtitle),
-            value: ref.watch(redownloadFakeHiResProvider),
-            onChanged: ref.read(redownloadFakeHiResProvider.notifier).set,
+              ListTile(
+                leading: const Icon(Icons.article_outlined),
+                title: Text(t.logsTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/logs'),
+              ),
+            ],
           ),
-
-          ListTile(
-            leading: const Icon(Icons.transform),
-            title: Text(t.downloadAutoConvert),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const AutoConvertSettingsScreen())),
-          ),
-
-          // Ask before download
-          SwitchListTile(
-            secondary: const Icon(Icons.tune_outlined),
-            title: Text(t.settingAskBeforeDownload),
-            subtitle: Text(t.settingAskBeforeDownloadDesc),
-            value: askBefore,
-            onChanged: (v) =>
-                ref.read(askBeforeDownloadProvider.notifier).set(v),
-          ),
-
-          const Divider(height: 1),
-
-          // Embed metadata
-          SwitchListTile(
-            secondary: const Icon(Icons.tag),
-            title: Text(t.settingEmbedMetadata),
-            subtitle: Text(t.settingEmbedMetadataDesc),
-            value: embedMeta,
-            onChanged: (v) =>
-                ref.read(embedMetadataProvider.notifier).set(v),
-          ),
-
-          // Embed cover art
-          SwitchListTile(
-            secondary: const Icon(Icons.image_outlined),
-            title: Text(t.settingEmbedCover),
-            subtitle: Text(t.settingEmbedCoverDesc),
-            value: embedCover,
-            onChanged: (v) =>
-                ref.read(embedCoverProvider.notifier).set(v),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.lyrics_outlined),
-            title: Text(t.lyricsSettingsTitle),
-            subtitle: Text(t.lyricsSettingsDescription),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const LyricsSettingsScreen(),
-            )),
-          ),
-
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.article_outlined),
-            title: Text(t.logsTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/logs'),
-          ),
+          _SettingsGroup(title: t.aboutTitle, children: const [_AboutCard()]),
         ],
       ),
     );
@@ -394,5 +434,143 @@ Future<void> _pickFolderLayout(
   );
   if (picked != null) {
     await ref.read(folderOrganizationProvider.notifier).set(picked);
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(top: AppSpace.xl, bottom: AppSpace.sm),
+        child: Text(
+          title.toUpperCase(),
+          style: AppText.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      Material(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) Divider(height: 1, color: context.tokens.lineSoft),
+              children[i],
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _AboutCard extends StatefulWidget {
+  const _AboutCard();
+
+  @override
+  State<_AboutCard> createState() => _AboutCardState();
+}
+
+class _AboutCardState extends State<_AboutCard> {
+  String? _version;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _version = info.version);
+    } catch (_) {
+      // About remains usable when platform package metadata is unavailable.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(AppSpace.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: context.tokens.lineSoft),
+                ),
+                child: const BrandMark(size: 40),
+              ),
+              const SizedBox(width: AppSpace.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.appTitle, style: AppText.section),
+                    if (_version != null)
+                      Text(
+                        'v$_version',
+                        style: AppText.caption.merge(context.tokens.mono),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Wrap(
+            spacing: AppSpace.sm,
+            children: [
+              TextButton(
+                onPressed: () => showLicensePage(
+                  context: context,
+                  applicationName: t.appTitle,
+                  applicationVersion: _version,
+                ),
+                child: Text(t.aboutLicenses),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    if (await launchUrl(
+                      Uri.parse('https://github.com/HDShinobi/flaive'),
+                      mode: LaunchMode.externalApplication,
+                    )) {
+                      return;
+                    }
+                  } catch (_) {
+                    // Launch failures use the same feedback as a false result.
+                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(t.linkOpenFailed)));
+                },
+                child: Text(t.aboutGitHub),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -88,7 +88,7 @@
   "libraryAll": "Tất cả",
   "libraryAlbums": "Album",
   "librarySingles": "Single",
-  "serveBannerTitle": "Phát qua DLNA · WebDAV",
+  "serveBannerTitle": "Phát qua DLNA",
   "serveBannerSubtitle": "{count} bài cho thiết bị khác",
   "@serveBannerSubtitle": {
     "placeholders": {
@@ -683,5 +683,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueEmptyTitle": "Chưa có bài nào đang tải",
+  "queueEmptyBody": "Tìm bài hát, album hoặc dán link. Mỗi file tải về sẽ được kiểm tra phổ.",
+  "queueEmptyAction": "Tìm bài hát",
+  "settingsGroupSources": "Nguồn",
+  "settingsGroupDownloads": "Tải về",
+  "settingsGroupQuality": "Chất lượng & xác minh",
+  "settingsGroupApp": "Ứng dụng",
+  "aboutTitle": "Giới thiệu",
+  "aboutLicenses": "Giấy phép",
+  "aboutGitHub": "GitHub",
+  "linkOpenFailed": "Không thể mở liên kết",
+  "sourcesCompact": "nguồn",
+  "serverConnectFrom": "KẾT NỐI TỪ",
+  "serverHelpDlna": "TV và loa kết nối qua DLNA.",
+  "verdictCutoff": "Ngưỡng cắt {value}",
+  "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }

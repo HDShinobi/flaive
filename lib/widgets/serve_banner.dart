@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_tokens.dart';
 
-/// Branded banner card that promotes the DLNA/WebDAV server feature.
+/// Branded banner card that promotes the DLNA server feature.
 class ServeBanner extends StatelessWidget {
   const ServeBanner({super.key, required this.count});
 

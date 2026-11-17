@@ -88,7 +88,7 @@
   "libraryAll": "All",
   "libraryAlbums": "Albums",
   "librarySingles": "Singles",
-  "serveBannerTitle": "Serving via DLNA · WebDAV",
+  "serveBannerTitle": "Serving via DLNA",
   "serveBannerSubtitle": "{count} tracks to other devices",
   "@serveBannerSubtitle": {
     "placeholders": {
@@ -683,5 +683,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueEmptyTitle": "Nothing downloading yet",
+  "queueEmptyBody": "Search for a song or album, or paste a link. Every download is spectrum-checked.",
+  "queueEmptyAction": "Search songs",
+  "settingsGroupSources": "Sources",
+  "settingsGroupDownloads": "Downloads",
+  "settingsGroupQuality": "Quality & verification",
+  "settingsGroupApp": "Application",
+  "aboutTitle": "About",
+  "aboutLicenses": "Licenses",
+  "aboutGitHub": "GitHub",
+  "linkOpenFailed": "Could not open link",
+  "sourcesCompact": "sources",
+  "serverConnectFrom": "CONNECT FROM",
+  "serverHelpDlna": "TVs and speakers connect via DLNA.",
+  "verdictCutoff": "Cutoff {value}",
+  "@verdictCutoff": {"placeholders": {"value": {"type": "String"}}}
 }

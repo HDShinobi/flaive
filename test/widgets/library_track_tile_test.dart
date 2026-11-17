@@ -74,8 +74,9 @@ void main() {
       });
     }
 
-    testWidgets('FLAC entry shows FLAC badge and verified check icon',
-        (tester) async {
+    testWidgets('FLAC entry shows FLAC badge and verified check icon', (
+      tester,
+    ) async {
       final bridge = _FakeBridge(
         const AudioQuality(bitDepth: 24, sampleRate: 96000, bitrate: 2304),
       );
@@ -85,15 +86,30 @@ void main() {
       // Format badge should show 'FLAC'
       final badgeFinder = find.byKey(const Key('formatBadge'));
       expect(badgeFinder, findsOneWidget);
-      expect(find.descendant(of: badgeFinder, matching: find.text('FLAC')),
-          findsOneWidget);
+      expect(
+        find.descendant(of: badgeFinder, matching: find.text('FLAC · 24/96')),
+        findsOneWidget,
+      );
 
       // Verified check icon should be present
       expect(find.byKey(const Key('verifiedCheck')), findsOneWidget);
+      final check = tester.widget<Container>(
+        find.byKey(const Key('verifiedCheck')),
+      );
+      expect(check.constraints?.maxWidth, 18);
+      expect((check.decoration! as BoxDecoration).shape, BoxShape.circle);
+      final badge = tester.widget<Container>(
+        find.byKey(const Key('qualityBadge')),
+      );
+      expect((badge.decoration! as BoxDecoration).border, isNull);
+      final text = tester.widget<Text>(find.text('FLAC · 24/96'));
+      expect(text.style?.fontFamily, 'JetBrainsMono');
+      expect(text.style?.fontSize, 11);
     });
 
-    testWidgets('FLAC entry with 24-bit/96 kHz shows quality badge "24/96"',
-        (tester) async {
+    testWidgets('FLAC entry with 24-bit/96 kHz shows quality badge "24/96"', (
+      tester,
+    ) async {
       final bridge = _FakeBridge(
         const AudioQuality(bitDepth: 24, sampleRate: 96000, bitrate: 2304),
       );
@@ -104,13 +120,14 @@ void main() {
       final qualityBadge = find.byKey(const Key('qualityBadge'));
       expect(qualityBadge, findsOneWidget);
       expect(
-        find.descendant(of: qualityBadge, matching: find.text('24/96')),
+        find.descendant(of: qualityBadge, matching: find.text('FLAC · 24/96')),
         findsOneWidget,
       );
     });
 
-    testWidgets('MP3 entry shows MP3 badge and no verified check icon',
-        (tester) async {
+    testWidgets('MP3 entry shows MP3 badge and no verified check icon', (
+      tester,
+    ) async {
       // MP3 has bitDepth=0, so quality badge shows kHz only (e.g. "44.1k")
       final bridge = _FakeBridge(
         const AudioQuality(bitDepth: 0, sampleRate: 44100, bitrate: 320),
@@ -121,15 +138,18 @@ void main() {
       // Format badge should show 'MP3'
       final badgeFinder = find.byKey(const Key('formatBadge'));
       expect(badgeFinder, findsOneWidget);
-      expect(find.descendant(of: badgeFinder, matching: find.text('MP3')),
-          findsOneWidget);
+      expect(
+        find.descendant(of: badgeFinder, matching: find.text('MP3 · 44.1k')),
+        findsOneWidget,
+      );
 
       // Verified check icon should NOT be present
       expect(find.byKey(const Key('verifiedCheck')), findsNothing);
     });
 
-    testWidgets('MP3 entry with bitDepth=0 shows lossy quality badge "44.1k"',
-        (tester) async {
+    testWidgets('MP3 entry with bitDepth=0 shows lossy quality badge "44.1k"', (
+      tester,
+    ) async {
       final bridge = _FakeBridge(
         const AudioQuality(bitDepth: 0, sampleRate: 44100, bitrate: 320),
       );
@@ -139,7 +159,7 @@ void main() {
       final qualityBadge = find.byKey(const Key('qualityBadge'));
       expect(qualityBadge, findsOneWidget);
       expect(
-        find.descendant(of: qualityBadge, matching: find.text('44.1k')),
+        find.descendant(of: qualityBadge, matching: find.text('MP3 · 44.1k')),
         findsOneWidget,
       );
     });

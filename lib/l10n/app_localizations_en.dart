@@ -237,7 +237,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get librarySingles => 'Singles';
 
   @override
-  String get serveBannerTitle => 'Serving via DLNA · WebDAV';
+  String get serveBannerTitle => 'Serving via DLNA';
 
   @override
   String serveBannerSubtitle(int count) {
@@ -1366,5 +1366,53 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String libraryScanFailureCount(int count) {
     return '$count files could not be read';
+  }
+
+  @override
+  String get queueEmptyTitle => 'Nothing downloading yet';
+
+  @override
+  String get queueEmptyBody =>
+      'Search for a song or album, or paste a link. Every download is spectrum-checked.';
+
+  @override
+  String get queueEmptyAction => 'Search songs';
+
+  @override
+  String get settingsGroupSources => 'Sources';
+
+  @override
+  String get settingsGroupDownloads => 'Downloads';
+
+  @override
+  String get settingsGroupQuality => 'Quality & verification';
+
+  @override
+  String get settingsGroupApp => 'Application';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutLicenses => 'Licenses';
+
+  @override
+  String get aboutGitHub => 'GitHub';
+
+  @override
+  String get linkOpenFailed => 'Could not open link';
+
+  @override
+  String get sourcesCompact => 'sources';
+
+  @override
+  String get serverConnectFrom => 'CONNECT FROM';
+
+  @override
+  String get serverHelpDlna => 'TVs and speakers connect via DLNA.';
+
+  @override
+  String verdictCutoff(String value) {
+    return 'Cutoff $value';
   }
 }

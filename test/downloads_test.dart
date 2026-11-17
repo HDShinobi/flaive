@@ -105,11 +105,11 @@ void main() {
       });
     }
 
-    testWidgets('shows queueEmpty text when list is empty', (tester) async {
+    testWidgets('shows queueEmptyTitle text when list is empty', (tester) async {
       await tester.pumpWidget(buildQueue(entries: []));
       await tester.pumpAndSettle();
 
-      expect(find.text('No downloads yet.'), findsOneWidget);
+      expect(find.text('Nothing downloading yet'), findsOneWidget);
     });
   });
 }
